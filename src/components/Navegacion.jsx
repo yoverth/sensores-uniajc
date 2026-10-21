@@ -16,6 +16,7 @@ const PESTANAS = [
   { id: 'optimizada', icono: '⚡', titulo: 'Optimizada', subtitulo: 'FlatList' },
   { id: 'adaptativa', icono: '🧮', titulo: 'Adaptativa', subtitulo: 'Responsive' },
   { id: 'sensores', icono: '📷', titulo: 'Sensores', subtitulo: 'Cámara + Mov' },
+  { id: 'tareas', icono: '📝', titulo: 'Tareas', subtitulo: 'Sesión 9' },
 ];
 
 export default function Navegacion({ pestana, setPestana }) {

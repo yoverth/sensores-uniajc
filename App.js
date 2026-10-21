@@ -6,6 +6,7 @@ import PantallaOriginal from './src/screens/PantallaOriginal';
 import PantallaOptimizada from './src/screens/PantallaOptimizada';
 import PantallaAdaptativa from './src/screens/PantallaAdaptativa';
 import PantallaSensores from './src/screens/PantallaSensores';
+import PantallaTareas from './src/screens/PantallaTareas';
 import styles from './src/styles';
 
 /* =========================================================
@@ -33,6 +34,10 @@ export default function App() {
 
       {pestana === 'sensores' && (
         <PantallaSensores pestana={pestana} setPestana={setPestana} />
+      )}
+
+      {pestana === 'tareas' && (
+        <PantallaTareas pestana={pestana} setPestana={setPestana} />
       )}
     </View>
   );
