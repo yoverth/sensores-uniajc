@@ -8,7 +8,8 @@ import { useWindowDimensions } from 'react-native';
    - apilado:     disposición vertical compacta (solo en retrato
                   de teléfono); en horizontal nunca se apila,
                   porque falta alto y sobra ancho.
-   - columnas:    columnas de la lista adaptativa según el ancho.
+   - columnas:    1 columna < 600 px, 2 entre 600 y 899 px,
+                  3 desde 900 px (requisito de la vista adaptativa).
 ========================================================= */
 
 export default function useDispositivo() {
@@ -17,7 +18,7 @@ export default function useDispositivo() {
   const esMovil = Math.min(width, height) < 600;
   const esHorizontal = width > height;
   const apilado = esMovil && !esHorizontal;
-  const columnas = width >= 1100 ? 3 : width >= 720 ? 2 : 1;
+  const columnas = width < 600 ? 1 : width < 900 ? 2 : 3;
 
   return { width, height, esMovil, esHorizontal, apilado, columnas };
 }

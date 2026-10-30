@@ -13,7 +13,7 @@ import styles from '../styles';
    PANTALLA OPTIMIZADA
 ========================================================= */
 
-export default function PantallaOptimizada({ pestana, setPestana }) {
+export default function PantallaOptimizada({ pestana, setPestana, onSalir }) {
   const [montados, setMontados] = useState(0);
 
   const registrarMontaje = () => {
@@ -33,7 +33,7 @@ export default function PantallaOptimizada({ pestana, setPestana }) {
         )}
         ListHeaderComponent={
           <View>
-            <EncabezadoAdaptativo />
+            <EncabezadoAdaptativo onSalir={onSalir} />
             <Navegacion pestana={pestana} setPestana={setPestana} />
 
             <TituloSeccion

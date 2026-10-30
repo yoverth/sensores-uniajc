@@ -14,7 +14,7 @@ import styles from '../styles';
    PANTALLA ADAPTATIVA
 ========================================================= */
 
-export default function PantallaAdaptativa({ pestana, setPestana }) {
+export default function PantallaAdaptativa({ pestana, setPestana, onSalir }) {
   const { apilado, columnas } = useDispositivo();
 
   const porcentaje = columnas === 3 ? '30%' : columnas === 2 ? '45%' : '60%';
@@ -31,7 +31,7 @@ export default function PantallaAdaptativa({ pestana, setPestana }) {
         )}
         ListHeaderComponent={
           <View>
-            <EncabezadoAdaptativo />
+            <EncabezadoAdaptativo onSalir={onSalir} />
             <Navegacion pestana={pestana} setPestana={setPestana} />
 
             <Metricas

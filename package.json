@@ -4,7 +4,7 @@
   "main": "index.js",
   "dependencies": {
     "@expo/metro-runtime": "~57.0.17",
-    "expo": "~57.0.26",
+    "expo": "~57.0.31",
     "expo-camera": "~57.0.6",
     "expo-media-library": "~57.0.5",
     "expo-screen-orientation": "~57.0.3",

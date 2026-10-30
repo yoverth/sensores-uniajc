@@ -13,11 +13,11 @@ import styles from '../styles';
    PANTALLA ORIGINAL
 ========================================================= */
 
-export default function PantallaOriginal({ pestana, setPestana }) {
+export default function PantallaOriginal({ pestana, setPestana, onSalir }) {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.contenido}>
-        <EncabezadoAdaptativo />
+        <EncabezadoAdaptativo onSalir={onSalir} />
         <Navegacion pestana={pestana} setPestana={setPestana} />
 
         <TituloSeccion

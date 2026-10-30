@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 
 import Navegacion from '../components/Navegacion';
+import estilosGlobales from '../styles';
 
 /* =========================================================
    SESIÓN 9 · REGISTRO, VALIDACIÓN E INTERACCIÓN DE TAREAS
@@ -31,7 +32,7 @@ const TAREAS_INICIALES = [
   { id: '3', titulo: 'Evaluar distintos tamaños', completada: true },
 ];
 
-export default function PantallaTareas({ pestana, setPestana }) {
+export default function PantallaTareas({ pestana, setPestana, onSalir }) {
   const [tareas, setTareas] = useState(TAREAS_INICIALES);
   const [texto, setTexto] = useState('');
   const [mensaje, setMensaje] = useState(
@@ -117,6 +118,20 @@ export default function PantallaTareas({ pestana, setPestana }) {
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >
+          {onSalir && (
+            <Pressable
+              onPress={onSalir}
+              accessibilityRole="button"
+              accessibilityLabel="Volver a la tienda"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={estilosGlobales.botonVolverTienda}
+            >
+              <Text style={estilosGlobales.botonVolverTiendaTexto}>
+                ← Volver a la tienda
+              </Text>
+            </Pressable>
+          )}
+
           <Navegacion pestana={pestana} setPestana={setPestana} />
 
           <Text style={estilos.etiqueta}>

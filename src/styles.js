@@ -12,6 +12,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingBottom: 40,
   },
+  /* Botón para salir del laboratorio y volver a la tienda */
+  botonVolverTienda: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: '#0C111D',
+    borderWidth: 1,
+    borderColor: '#243043',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 2,
+    marginBottom: 10,
+  },
+  botonVolverTiendaTexto: {
+    color: '#8FA3BF',
+    fontSize: 11,
+    fontWeight: '800',
+  },
   header: {
     minHeight: 95,
     flexDirection: 'row',

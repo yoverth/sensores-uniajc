@@ -28,7 +28,7 @@ import styles from '../styles';
    Mejora 2: retícula centrada, hitSlop y accesibilidad.
 ========================================================= */
 
-export default function PantallaSensores({ pestana, setPestana }) {
+export default function PantallaSensores({ pestana, setPestana, onSalir }) {
   const [permission, requestPermission] = useCameraPermissions();
   // Permisos de la galería (writeOnly: solo guardamos, no leemos)
   const [permisoGaleria, solicitarPermisoGaleria] = MediaLibrary.usePermissions({
@@ -102,7 +102,7 @@ export default function PantallaSensores({ pestana, setPestana }) {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.contenido}>
-        <EncabezadoAdaptativo />
+        <EncabezadoAdaptativo onSalir={onSalir} />
         <Navegacion pestana={pestana} setPestana={setPestana} />
 
         <TituloSeccion

@@ -11,18 +11,29 @@ export default function useAcelerometro() {
 
   useEffect(() => {
     let suscripcion = null;
+    let vigente = true;
 
-    Accelerometer.isAvailableAsync().then((disponible) => {
-      setSensorDisponible(disponible);
-      if (disponible) {
+    Accelerometer.isAvailableAsync()
+      .then((disponible) => {
+        if (!vigente) return;
+
+        setSensorDisponible(disponible);
+
+        if (!disponible) return;
+
         Accelerometer.setUpdateInterval(50);
         suscripcion = Accelerometer.addListener((data) => {
           setDatosSensor(data);
         });
-      }
-    });
+      })
+      .catch(() => {
+        /* En web algunos navegadores exponen el evento pero no el
+           módulo nativo: se informa como sensor no disponible. */
+        if (vigente) setSensorDisponible(false);
+      });
 
     return () => {
+      vigente = false;
       if (suscripcion) suscripcion.remove();
     };
   }, []);
