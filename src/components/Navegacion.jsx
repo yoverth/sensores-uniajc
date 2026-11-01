@@ -17,6 +17,7 @@ const PESTANAS = [
   { id: 'adaptativa', icono: '🧮', titulo: 'Adaptativa', subtitulo: 'Responsive' },
   { id: 'sensores', icono: '📷', titulo: 'Sensores', subtitulo: 'Cámara + Mov' },
   { id: 'tareas', icono: '📝', titulo: 'Tareas', subtitulo: 'Sesión 9' },
+  { id: 'asistente', icono: '🤖', titulo: 'Asistente IA', subtitulo: '1-NN local' },
 ];
 
 export default function Navegacion({ pestana, setPestana }) {

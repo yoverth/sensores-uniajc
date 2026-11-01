@@ -19,6 +19,10 @@ import PantallaOptimizada from './src/screens/PantallaOptimizada';
 import PantallaAdaptativa from './src/screens/PantallaAdaptativa';
 import PantallaSensores from './src/screens/PantallaSensores';
 import PantallaTareas from './src/screens/PantallaTareas';
+import AsistenteIA from './src/screens/AsistenteIA';
+
+/* ---------- DATOS ---------- */
+import { PRODUCTOS } from './src/data/catalogo';
 
 /* ---------- LÓGICA ---------- */
 import {
@@ -178,6 +182,10 @@ export default function App() {
       return <PantallaSensores {...propsLaboratorio} />;
     }
 
+    if (pestanaLab === 'asistente') {
+      return <AsistenteIA productos={PRODUCTOS} {...propsLaboratorio} />;
+    }
+
     return <PantallaTareas {...propsLaboratorio} />;
   }
 
@@ -221,6 +229,14 @@ export default function App() {
                 onAbrirAgita={() => setVista('agita')}
                 onAbrirCarrito={() => setVista('carrito')}
                 onAbrirLaboratorio={() => setSeccion('laboratorio')}
+              />
+            )}
+
+            {vista === 'asistente' && (
+              <AsistenteIA
+                productos={PRODUCTOS}
+                embebido
+                onSalir={() => setVista('inicio')}
               />
             )}
 

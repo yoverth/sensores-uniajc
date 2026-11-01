@@ -13,6 +13,12 @@ const ITEMS = [
   { id: 'agita', icono: '🎁', texto: 'Agita' },
   { id: 'carrito', icono: '🛍️', texto: 'Carrito', muestraBadge: true },
   { id: 'pedidos', icono: '🧾', texto: 'Pedidos' },
+  {
+    id: 'asistente',
+    icono: '🤖',
+    texto: 'Asistente',
+    etiquetaAccesible: 'Asistente IA',
+  },
 ];
 
 export default function BarraTienda({ vista, onNavegar, cantidadCarrito }) {
@@ -30,7 +36,7 @@ export default function BarraTienda({ vista, onNavegar, cantidadCarrito }) {
             key={item.id}
             onPress={() => onNavegar(item.id)}
             accessibilityRole="tab"
-            accessibilityLabel={item.texto}
+            accessibilityLabel={item.etiquetaAccesible || item.texto}
             accessibilityState={{ selected: seleccionada }}
             style={estilos.barraItem}
           >

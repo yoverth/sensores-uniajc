@@ -2,7 +2,9 @@
 
 Tienda móvil de pastelería hecha con **Expo + React Native** (Android, iOS y web).
 Incluye catálogo, carrito, checkout y el juego **«Agita y gana»**, que usa el
-**acelerómetro real** del teléfono para desbloquear descuentos.
+**acelerómetro real** del teléfono para desbloquear descuentos. Incorpora
+además un **Asistente IA local** (pestaña 🤖) para consultar precio, nombre y
+descripción de los productos sin depender de internet.
 
 El antiguo laboratorio académico de sensores y rendimiento se conserva, pero ya
 no es la pantalla inicial: vive dentro de **Herramientas internas**.
@@ -18,6 +20,23 @@ no es la pantalla inicial: vive dentro de **Herramientas internas**.
   descripción, imagen y disponibilidad.
 - Cada tarjeta tiene **Agregar al carrito** y **Comprar ahora**.
 - Los 120 productos de demostración del laboratorio **no** aparecen aquí.
+
+### Asistente IA (pestaña 🤖 de la tienda)
+- Clasificador didáctico **1-NN** (vecino más cercano) que funciona **100 %
+  local**: no usa APIs de inteligencia artificial ni envía información a
+  internet.
+- Reconoce tres intenciones sobre el producto activo: **precio**, **nombre** y
+  **descripción**.
+- Normaliza el texto (minúsculas, sin tildes, sin puntuación y sin palabras
+  vacías) y compara la consulta con ejemplos de entrenamiento mediante
+  **similitud de coseno**.
+- Umbral de confianza de **0.35** y margen de **0.10** sobre la segunda
+  intención: si la pregunta es ambigua o está fuera de contexto, el asistente
+  explica por qué no respondió en lugar de responder mal.
+- Muestra el producto activo (imagen, nombre, categoría, precio y descripción),
+  la respuesta, el porcentaje de confianza y un historial reciente.
+- Se adapta a móvil (1 columna) y a tablet/web (dos paneles), y también vive
+  como pestaña dentro de **Herramientas internas**.
 
 ### Carrito
 - Aumentar/disminuir cantidades (sin pasar de 1 ni del stock), eliminar ítems.
@@ -65,6 +84,8 @@ Accesible desde el botón 🧪 del encabezado (y con «← Volver a la tienda»)
   900 px.
 - **Sensores:** ejes X/Y/Z del acelerómetro, nivelación y captura con cámara.
 - **Tareas:** sesión 9 (registro y validación adaptativa).
+- **Asistente IA:** el mismo clasificador local de la tienda, como pestaña del
+  laboratorio.
 
 ---
 
@@ -143,6 +164,21 @@ directo al carrito.
    contexto seguro (`https` o `localhost`); en escritorio sin sensor verás el
    aviso de permiso/disponibilidad. La experiencia completa es en el teléfono.
 
+### Asistente IA
+1. Toca 🤖 **Asistente** en la barra inferior de la tienda (o entra por el
+   laboratorio y selecciona la pestaña **Asistente IA**).
+2. Escribe «¿Cuánto cuesta este producto?» y toca **Consultar**: verás el precio
+   en COP junto a la confianza del clasificador.
+3. Prueba también «¿Cómo se llama este artículo?» y «¿Qué características
+   tiene?».
+4. Usa **Siguiente producto** para recorrer los productos de forma cíclica y
+   observa cómo cambia la respuesta.
+5. Escribe una pregunta vacía o sin relación con el catálogo (ej. «¿Cuál es el
+   clima?»): aparece el mensaje de validación en lugar de una respuesta
+   incorrecta.
+6. Vuelve con **← Volver al catálogo** o con 🏠 **Inicio**; el catálogo que
+   consulta es el mismo `PRODUCTOS` de `src/data/catalogo.js`.
+
 ### Laboratorio
 1. Toca 🧪 **Herramientas internas**.
 2. Recorre **Original**, **Optimizada** y **Adaptativa** (cambia el ancho de la
@@ -165,6 +201,7 @@ src/  data/
   logic/
     carrito.js                agregar, cantidades, resumen y envío
     formato.js                precios en COP
+    modelIA.js                clasificador 1-NN y similitud de coseno
     promociones.js            vigencia, mínimos y premio por sacudida
     sacudida.js               detección pura de sacudidas
   hooks/
@@ -174,7 +211,7 @@ src/  data/
     pedidos.js                creación de pedido (listo para API)
   components/tienda/          encabezado, barra, tarjeta, resumen, selector, aviso
   screens/tienda/             tienda, carrito, checkout, confirmación, agita, pedidos
-  screens/                    pantallas del laboratorio
+  screens/                    pantallas del laboratorio y AsistenteIA.jsx
   estilosTienda.js            paleta crema/rosa/chocolate
   styles.js                   tema oscuro del laboratorio
 assets/productos/             fotografías y CREDITOS.md
@@ -187,6 +224,17 @@ Edita `src/data/catalogo.js`: cada producto tiene `id`, `nombre`, `descripcion`,
 ### Cambiar reglas de «Agita y gana»
 Edita `src/data/promociones.js` (premios, mínimos, vigencia, espera) y los
 umbrales de fuerza. La detección física está en `src/logic/sacudida.js`.
+
+### Cambiar el Asistente IA
+- Los ejemplos de entrenamiento (`EJEMPLOS_ENTRENAMIENTO`), las palabras
+  vacías (`PALABRAS_VACIAS`) y los umbrales (`UMBRAL_CONFIANZA` y
+  `UMBRAL_DIFERENCIA`) viven en `src/logic/modeloIA.js`; no requieren
+  conexión ni dependencias externas.
+- El asistente **no duplica el catálogo**: recibe `PRODUCTOS` por props desde
+  `App.js`, por lo que se actualiza solo si cambian los productos.
+- La interfaz y los mensajes de respuesta están en
+  `src/screens/AsistenteIA.jsx` (usado por la pestaña 🤖 de la tienda y por la
+  pestaña del laboratorio).
 
 ---
 
