@@ -100,11 +100,11 @@ npm install
 Dependencias principales (ya en `package.json`):
 
 ```json
-"expo": "~57.0.31",
-"react-native": "0.86.3",
-"expo-sensors": "~57.0.3",
-"expo-camera": "~57.0.6",
-"expo-media-library": "~57.0.5"
+"expo": "^58.0.0",
+"react-native": "0.88.1",
+"expo-sensors": "~58.0.4",
+"expo-camera": "~58.0.14",
+"expo-media-library": "~58.0.13"
 ```
 
 No hace falta añadir nada más para la tienda ni para el acelerómetro.

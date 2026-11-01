@@ -31,7 +31,8 @@
           "savePhotosPermission": "Permite a $(PRODUCT_NAME) guardar las fotografías capturadas en tu galería.",
           "isAccessMediaLocationEnabled": false
         }
-      ]
+      ],
+      "expo-status-bar"
     ]
   }
 }
