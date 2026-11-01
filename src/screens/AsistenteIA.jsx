@@ -37,6 +37,14 @@ const SUGERENCIAS = [
   '¿Qué características tiene?',
 ];
 
+/* Opciones manuales que se ofrecen cuando el clasificador no puede
+   decidir (pregunta ambigua o fuera de contexto). */
+const OPCIONES_MANUALES = [
+  { intencion: 'nombre', icono: '🏷️', texto: 'Ver Nombre' },
+  { intencion: 'precio', icono: '💲', texto: 'Ver Precio' },
+  { intencion: 'descripcion', icono: '📋', texto: 'Ver Descripción' },
+];
+
 function obtenerFuenteImagen(imagen) {
   if (!imagen) return null;
   return typeof imagen === 'string' ? { uri: imagen } : imagen;
@@ -150,17 +158,19 @@ export default function AsistenteIA({
     const resultado = clasificarIntencion(texto);
 
     if (!resultado.valida) {
-      const detalle =
-        resultado.motivo === 'ambigua'
-          ? 'La pregunta se parece a más de una intención.'
-          : 'No encontré suficientes palabras clave sobre precio, nombre o descripción.';
+      const ambigua = resultado.motivo === 'ambigua';
 
-      const mensaje = `${detalle} Prueba con: "¿Cuánto cuesta?", "¿Cómo se llama?" o "¿Qué características tiene?".`;
+      const detalle = ambigua
+        ? 'La pregunta se parece a más de una intención y prefiero no adivinar.'
+        : 'No encontré suficientes palabras clave sobre precio, nombre o descripción.';
+
+      const mensaje = `${detalle} Elige un dato con las opciones de abajo o escribe otra pregunta como "¿Cuánto cuesta?" o "¿Qué características tiene?".`;
 
       setRespuesta({
         tipo: 'error',
-        titulo: 'Intención no reconocida',
+        titulo: ambigua ? 'Pregunta ambigua' : 'Intención no reconocida',
         texto: mensaje,
+        muestraOpciones: total > 0,
       });
       registrarHistorial(texto, mensaje, false);
       return;
@@ -193,6 +203,24 @@ export default function AsistenteIA({
   function usarSugerencia(texto) {
     setPregunta(texto);
     responder(texto);
+  }
+
+  /* Respuesta manual: el usuario elige el dato cuando el clasificador
+     no pudo decidir. Sale siempre del producto activo. */
+  function responderManual(intencion) {
+    if (total === 0 || !producto) return;
+
+    const etiqueta = ETIQUETAS_INTENCION[intencion] || 'Respuesta';
+    const textoRespuesta = construirRespuesta(intencion, producto);
+
+    setRespuesta({
+      tipo: 'exito',
+      titulo: etiqueta,
+      texto: textoRespuesta,
+      manual: true,
+      intencion,
+    });
+    registrarHistorial(`${etiqueta} (opción manual)`, textoRespuesta, true);
   }
 
   const estiloRespuesta =
@@ -469,7 +497,41 @@ export default function AsistenteIA({
                     {Math.round(respuesta.confianza * 100)}%
                   </Text>
                 )}
+
+                {respuesta?.manual && (
+                  <Text style={estilos.confianza}>
+                    Dato verificado del producto activo (selección manual).
+                  </Text>
+                )}
               </View>
+
+              {/* ---------- OPCIONES MANUALES ---------- */}
+              {respuesta?.muestraOpciones && producto && (
+                <View style={estilos.opciones}>
+                  <Text style={estilos.opcionesTitulo}>
+                    Elige el dato que quieres ver de {producto.nombre}:
+                  </Text>
+
+                  <View style={estilos.opcionesFila}>
+                    {OPCIONES_MANUALES.map((opcion) => (
+                      <Pressable
+                        key={opcion.intencion}
+                        onPress={() => responderManual(opcion.intencion)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${opcion.texto} de ${producto.nombre}`}
+                        style={({ pressed }) => [
+                          estilos.opcion,
+                          pressed && estilos.pulsado,
+                        ]}
+                      >
+                        <Text style={estilos.opcionTexto}>
+                          {opcion.icono} {opcion.texto}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+              )}
 
               {/* ---------- HISTORIAL ---------- */}
               {historial.length > 0 && (
@@ -767,6 +829,40 @@ const estilos = StyleSheet.create({
     fontSize: 9,
     fontWeight: '700',
     marginTop: 8,
+  },
+  opciones: {
+    borderTopWidth: 1,
+    borderTopColor: '#202938',
+    marginTop: 12,
+    paddingTop: 12,
+  },
+  opcionesTitulo: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '900',
+    marginBottom: 10,
+  },
+  opcionesFila: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  opcion: {
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#00E5FF',
+    backgroundColor: '#0C111D',
+    minWidth: 110,
+  },
+  opcionTexto: {
+    color: '#00E5FF',
+    fontSize: 13,
+    fontWeight: '900',
   },
   historial: {
     borderTopWidth: 1,

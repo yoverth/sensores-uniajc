@@ -19,12 +19,16 @@ no es la pantalla inicial: vive dentro de **Herramientas internas**.
   cupcakes, brownies, galletas, postres y bebidas) con precio en COP,
   descripción, imagen y disponibilidad.
 - Cada tarjeta tiene **Agregar al carrito** y **Comprar ahora**.
-- Los 120 productos de demostración del laboratorio **no** aparecen aquí.
+- Los 120 productos de demostración del laboratorio **no** aparecen en las
+  tarjetas de la tienda, pero sí están cubiertos por el Asistente IA.
 
 ### Asistente IA (pestaña 🤖 de la tienda)
 - Clasificador didáctico **1-NN** (vecino más cercano) que funciona **100 %
   local**: no usa APIs de inteligencia artificial ni envía información a
   internet.
+- Cubre **todos los productos**: los 14 comerciales del catálogo real más los
+  120 de demostración del laboratorio (**134 en total**), combinados en
+  `App.js` sin duplicar listas.
 - Reconoce tres intenciones sobre el producto activo: **precio**, **nombre** y
   **descripción**.
 - Normaliza el texto (minúsculas, sin tildes, sin puntuación y sin palabras
@@ -33,6 +37,10 @@ no es la pantalla inicial: vive dentro de **Herramientas internas**.
 - Umbral de confianza de **0.35** y margen de **0.10** sobre la segunda
   intención: si la pregunta es ambigua o está fuera de contexto, el asistente
   explica por qué no respondió en lugar de responder mal.
+- **Opciones manuales ante la duda:** cuando la pregunta es ambigua (ej.
+  «dime el nombre y el precio») o no reconoce la intención, se muestran tres
+  botones — 🏷️ **Ver Nombre**, 💲 **Ver Precio** y 📋 **Ver Descripción** —
+  que entregan el dato verificado del producto activo con un toque.
 - Muestra el producto activo (imagen, nombre, categoría, precio y descripción),
   la respuesta, el porcentaje de confianza y un historial reciente.
 - Se adapta a móvil (1 columna) y a tablet/web (dos paneles), y también vive
@@ -171,13 +179,19 @@ directo al carrito.
    en COP junto a la confianza del clasificador.
 3. Prueba también «¿Cómo se llama este artículo?» y «¿Qué características
    tiene?».
-4. Usa **Siguiente producto** para recorrer los productos de forma cíclica y
-   observa cómo cambia la respuesta.
-5. Escribe una pregunta vacía o sin relación con el catálogo (ej. «¿Cuál es el
+4. Escribe una pregunta vacía o sin relación con el catálogo (ej. «¿Cuál es el
    clima?»): aparece el mensaje de validación en lugar de una respuesta
    incorrecta.
-6. Vuelve con **← Volver al catálogo** o con 🏠 **Inicio**; el catálogo que
-   consulta es el mismo `PRODUCTOS` de `src/data/catalogo.js`.
+5. Escribe una pregunta ambigua como «dime el nombre y el precio»: el asistente
+   avisa que no quiere adivinar y despliega los botones 🏷️ **Ver Nombre**,
+   💲 **Ver Precio** y 📋 **Ver Descripción**; toca uno y obtienes el dato
+   verificado del producto activo.
+6. Usa **Siguiente producto** para recorrer los 134 productos de forma cíclica
+   (los primeros 14 son los reales y siguen los de demostración) y observa
+   cómo cambia la respuesta.
+7. Vuelve con **← Volver al catálogo** o con 🏠 **Inicio**; el catálogo que
+   consulta une `PRODUCTOS` de `src/data/catalogo.js` con `productos` de
+   `src/data/productos.js` en `App.js`.
 
 ### Laboratorio
 1. Toca 🧪 **Herramientas internas**.
@@ -230,8 +244,13 @@ umbrales de fuerza. La detección física está en `src/logic/sacudida.js`.
   vacías (`PALABRAS_VACIAS`) y los umbrales (`UMBRAL_CONFIANZA` y
   `UMBRAL_DIFERENCIA`) viven en `src/logic/modeloIA.js`; no requieren
   conexión ni dependencias externas.
-- El asistente **no duplica el catálogo**: recibe `PRODUCTOS` por props desde
-  `App.js`, por lo que se actualiza solo si cambian los productos.
+- El asistente **no duplica el catálogo**: `App.js` combina `PRODUCTOS`
+  (comerciales) y `productos` (demostración) en `PRODUCTOS_ASISTENTE` y se los
+  pasa por props, por lo que se actualiza solo si cambian los productos.
+- Las opciones manuales (🏷️ Ver Nombre, 💲 Ver Precio, 📋 Ver Descripción) se
+  muestran cuando `clasificarIntencion` devuelve un resultado inválido
+  (ambiguo o fuera de contexto); el listado `OPCIONES_MANUALES` y los mensajes
+  están en `src/screens/AsistenteIA.jsx`.
 - La interfaz y los mensajes de respuesta están en
   `src/screens/AsistenteIA.jsx` (usado por la pestaña 🤖 de la tienda y por la
   pestaña del laboratorio).

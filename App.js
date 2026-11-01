@@ -23,6 +23,11 @@ import AsistenteIA from './src/screens/AsistenteIA';
 
 /* ---------- DATOS ---------- */
 import { PRODUCTOS } from './src/data/catalogo';
+import { productos as PRODUCTOS_LABORATORIO } from './src/data/productos';
+
+/* Catálogo completo que consulta el asistente: los productos comerciales
+   más los de demostración del laboratorio (sin duplicar listas). */
+const PRODUCTOS_ASISTENTE = [...PRODUCTOS, ...PRODUCTOS_LABORATORIO];
 
 /* ---------- LÓGICA ---------- */
 import {
@@ -183,7 +188,9 @@ export default function App() {
     }
 
     if (pestanaLab === 'asistente') {
-      return <AsistenteIA productos={PRODUCTOS} {...propsLaboratorio} />;
+      return (
+        <AsistenteIA productos={PRODUCTOS_ASISTENTE} {...propsLaboratorio} />
+      );
     }
 
     return <PantallaTareas {...propsLaboratorio} />;
@@ -234,7 +241,7 @@ export default function App() {
 
             {vista === 'asistente' && (
               <AsistenteIA
-                productos={PRODUCTOS}
+                productos={PRODUCTOS_ASISTENTE}
                 embebido
                 onSalir={() => setVista('inicio')}
               />
