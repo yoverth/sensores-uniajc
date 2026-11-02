@@ -18,6 +18,8 @@ import TituloSeccion from '../components/TituloSeccion';
 import Alerta from '../components/Alerta';
 import {
   ETIQUETAS_INTENCION,
+  UMBRAL_CONFIANZA,
+  UMBRAL_DIFERENCIA,
   clasificarIntencion,
 } from '../logic/modeloIA';
 import { formatearCOP } from '../logic/formato';
@@ -166,10 +168,27 @@ export default function AsistenteIA({
 
       const mensaje = `${detalle} Elige un dato con las opciones de abajo o escribe otra pregunta como "¿Cuánto cuesta?" o "¿Qué características tiene?".`;
 
+      /* Evidencia del clasificador: similitudes de las dos mejores
+         intenciones y la diferencia frente al umbral de ambigüedad. */
+      const porcentaje = (v) => `${Math.round(v * 100)}%`;
+      const evidencia =
+        ambigua && resultado.intencion && resultado.segundaIntencion
+          ? `Similitudes: ${resultado.intencion} ${porcentaje(
+              resultado.confianza
+            )} · ${resultado.segundaIntencion} ${porcentaje(
+              resultado.segundaConfianza
+            )} · diferencia ${resultado.diferencia.toFixed(
+              2
+            )} < umbral ${UMBRAL_DIFERENCIA.toFixed(2)}.`
+          : `Confianza máxima: ${porcentaje(
+              resultado.confianza
+            )} < umbral mínimo ${porcentaje(UMBRAL_CONFIANZA)}.`;
+
       setRespuesta({
         tipo: 'error',
         titulo: ambigua ? 'Pregunta ambigua' : 'Intención no reconocida',
         texto: mensaje,
+        evidencia,
         muestraOpciones: total > 0,
       });
       registrarHistorial(texto, mensaje, false);
@@ -490,6 +509,10 @@ export default function AsistenteIA({
                     ? respuesta.texto
                     : 'Escribe una pregunta o toca una sugerencia para comenzar.'}
                 </Text>
+
+                {respuesta?.evidencia && (
+                  <Text style={estilos.evidencia}>{respuesta.evidencia}</Text>
+                )}
 
                 {respuesta?.confianza !== undefined && (
                   <Text style={estilos.confianza}>
@@ -829,6 +852,13 @@ const estilos = StyleSheet.create({
     fontSize: 9,
     fontWeight: '700',
     marginTop: 8,
+  },
+  evidencia: {
+    color: '#00D9A6',
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 8,
+    lineHeight: 15,
   },
   opciones: {
     borderTopWidth: 1,
