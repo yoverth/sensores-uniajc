@@ -38,7 +38,11 @@ export default function BarraTienda({ vista, onNavegar, cantidadCarrito }) {
             accessibilityRole="tab"
             accessibilityLabel={item.etiquetaAccesible || item.texto}
             accessibilityState={{ selected: seleccionada }}
-            style={estilos.barraItem}
+            hitSlop={{ top: 4, bottom: 4, left: 0, right: 0 }}
+            style={({ pressed }) => [
+              estilos.barraItem,
+              pressed && estilos.barraItemPresionado,
+            ]}
           >
             <View style={estilos.barraIconoWrap}>
               <Text

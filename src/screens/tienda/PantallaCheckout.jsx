@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 
-import estilos from '../../estilosTienda';
+import estilos, { colores } from '../../estilosTienda';
 import ResumenPrecios from '../../components/tienda/ResumenPrecios';
 import {
   calcularResumen,
@@ -222,7 +222,7 @@ export default function PantallaCheckout({
             value={nombre}
             onChangeText={setNombre}
             placeholder="Ej. Laura Torres"
-            placeholderTextColor="#B0998C"
+            placeholderTextColor={colores.textoTenue}
             style={estilos.entrada}
             autoCapitalize="words"
             returnKeyType="next"
@@ -236,7 +236,7 @@ export default function PantallaCheckout({
             value={telefono}
             onChangeText={setTelefono}
             placeholder="Ej. 300 123 4567"
-            placeholderTextColor="#B0998C"
+            placeholderTextColor={colores.textoTenue}
             style={estilos.entrada}
             keyboardType="phone-pad"
             returnKeyType="next"
@@ -251,7 +251,7 @@ export default function PantallaCheckout({
               value={direccion}
               onChangeText={setDireccion}
               placeholder="Calle, número, barrio y ciudad"
-              placeholderTextColor="#B0998C"
+              placeholderTextColor={colores.textoTenue}
               style={estilos.entrada}
               returnKeyType="next"
               accessibilityLabel="Dirección de entrega"
@@ -265,7 +265,7 @@ export default function PantallaCheckout({
             value={notas}
             onChangeText={setNotas}
             placeholder="Dedicatoria, alergias, referencias…"
-            placeholderTextColor="#B0998C"
+            placeholderTextColor={colores.textoTenue}
             style={[estilos.entrada, estilos.entradaMultilinea]}
             multiline
             accessibilityLabel="Notas del pedido"
@@ -336,11 +336,11 @@ export default function PantallaCheckout({
           accessibilityState={{ disabled: confirmando }}
           style={({ pressed }) => [
             estilos.botonAncho,
-            (pressed || confirmando) && { opacity: 0.8 },
+            (pressed || confirmando) && estilos.botonAnchoPresionado,
           ]}
         >
           {confirmando ? (
-            <ActivityIndicator color="#FFF4EC" />
+            <ActivityIndicator color={colores.darkInk} />
           ) : (
             <Text style={estilos.botonAnchoTexto}>
               Confirmar pedido · {formatearCOP(resumen.total)}

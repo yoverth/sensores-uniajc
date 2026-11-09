@@ -222,7 +222,13 @@ export default function PantallaAgitaYGana({
         </View>
 
         <View style={estilos.barraSensor}>
-          <View style={[estilos.barraSensorRelleno, { width: `${anchoBarra}%` }]} />
+          <View
+            style={[
+              estilos.barraSensorRelleno,
+              { width: `${anchoBarra}%` },
+              anchoBarra >= 75 && estilos.barraSensorCerca,
+            ]}
+          />
         </View>
 
         <Text style={[estilos.notaPie, { textAlign: 'left', marginTop: 8 }]}>
@@ -242,8 +248,9 @@ export default function PantallaAgitaYGana({
                 accessibilityRole="button"
                 accessibilityLabel={`Sensibilidad ${opcion.etiqueta}`}
                 accessibilityState={{ selected: activa, disabled: activo }}
-                style={[
+                style={({ pressed }) => [
                   estilos.umbralChip,
+                  pressed && !activa && estilos.umbralChipPresionado,
                   activa && estilos.umbralChipActivo,
                   activo && estilos.botonDeshabilitado,
                 ]}
@@ -308,11 +315,12 @@ export default function PantallaAgitaYGana({
           activo ? 'Detener la detección de movimiento' : 'Comenzar a agitar'
         }
         accessibilityState={{ disabled: !activo && (disponible === false || espera > 0) }}
+        style={({ pressed }) => pressed && estilos.circuloPresionado}
       >
         <Animated.View
           style={[
             estilos.circuloAgitar,
-            escuchando && { borderColor: '#C46A78', backgroundColor: '#FBE3E7' },
+            escuchando && estilos.circuloEscuchando,
             { transform: [{ scale: pulso }] },
             !activo && espera > 0 && estilos.botonDeshabilitado,
           ]}
@@ -363,7 +371,7 @@ export default function PantallaAgitaYGana({
             style={({ pressed }) => [
               estilos.botonAncho,
               !cuponVigente && estilos.botonDeshabilitado,
-              pressed && { opacity: 0.85 },
+              pressed && estilos.botonAnchoPresionado,
             ]}
           >
             <Text style={estilos.botonAnchoTexto}>
@@ -384,7 +392,7 @@ export default function PantallaAgitaYGana({
             style={({ pressed }) => [
               estilos.botonClaro,
               espera > 0 && estilos.botonDeshabilitado,
-              pressed && { opacity: 0.8 },
+              pressed && estilos.botonClaroPresionado,
             ]}
           >
             <Text style={estilos.botonClaroTexto}>
@@ -406,7 +414,7 @@ export default function PantallaAgitaYGana({
             accessibilityLabel="Volver a la tienda"
             style={({ pressed }) => [
               estilos.botonClaro,
-              pressed && { opacity: 0.8 },
+              pressed && estilos.botonClaroPresionado,
             ]}
           >
             <Text style={estilos.botonClaroTexto}>Volver a la tienda</Text>

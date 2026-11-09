@@ -1,11 +1,13 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Text } from 'react-native';
+import { Animated, Easing, Text } from 'react-native';
 
 import estilos from '../../estilosTienda';
 
 /* =========================================================
    AVISO FLOTANTE (no bloqueante)
    Informa del resultado de una acción sin abrir diálogos.
+   Entra con una curva exponencial de salida y se asienta
+   sin rebote: feedback, no espectáculo.
 ========================================================= */
 
 export default function AvisoFlotante({ aviso }) {
@@ -16,12 +18,14 @@ export default function AvisoFlotante({ aviso }) {
     Animated.parallel([
       Animated.timing(opacidad, {
         toValue: 1,
-        duration: 180,
+        duration: 220,
+        easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(desplazamiento, {
         toValue: 0,
-        duration: 180,
+        duration: 260,
+        easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
     ]).start();

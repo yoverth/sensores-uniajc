@@ -31,6 +31,7 @@ export default function PantallaTienda({
 }) {
   const [texto, setTexto] = useState('');
   const [categoria, setCategoria] = useState('todas');
+  const [buscadorFoco, setBuscadorFoco] = useState(false);
 
   const { width } = useWindowDimensions();
   const columnas = width < 600 ? 1 : width < 900 ? 2 : 3;
@@ -60,7 +61,6 @@ export default function PantallaTienda({
               ]}
             />
 
-            <Text style={estilos.heroEtiqueta}>PASTELERÍA ARTESANAL</Text>
             <Text style={estilos.heroTitulo}>
               Endulza tu día{'\n'}con un toque de La T
             </Text>
@@ -76,7 +76,7 @@ export default function PantallaTienda({
               hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
               style={({ pressed }) => [
                 estilos.heroBoton,
-                pressed && { opacity: 0.8 },
+                pressed && estilos.heroBotonPresionado,
               ]}
             >
               <Text style={estilos.heroBotonTexto}>🎁 Agita y gana</Text>
@@ -120,14 +120,16 @@ export default function PantallaTienda({
         </Pressable>
       )}
 
-      <View style={estilos.buscador}>
+      <View style={[estilos.buscador, buscadorFoco && estilos.buscadorFoco]}>
         <Text style={estilos.buscadorIcono}>🔍</Text>
 
         <TextInput
           value={texto}
           onChangeText={setTexto}
           placeholder="Busca tortas, cupcakes, café…"
-          placeholderTextColor="#A98F82"
+          placeholderTextColor={colores.textoTenue}
+          onFocus={() => setBuscadorFoco(true)}
+          onBlur={() => setBuscadorFoco(false)}
           style={estilos.buscadorInput}
           returnKeyType="search"
           autoFocus={!esInicio}
@@ -164,7 +166,11 @@ export default function PantallaTienda({
               accessibilityRole="button"
               accessibilityLabel={`Categoría ${cat.nombre}`}
               accessibilityState={{ selected: activa }}
-              style={[estilos.categoriaChip, activa && estilos.categoriaChipActivo]}
+              style={({ pressed }) => [
+                estilos.categoriaChip,
+                pressed && !activa && estilos.categoriaChipPresionado,
+                activa && estilos.categoriaChipActivo,
+              ]}
             >
               <Text>{cat.icono}</Text>
               <Text
@@ -193,7 +199,6 @@ export default function PantallaTienda({
 
   const pie = esInicio ? (
     <View style={estilos.pieHerramientas}>
-      <Text style={estilos.pieEtiqueta}>SECCIÓN INTERNA</Text>
       <Text style={estilos.pieTitulo}>Herramientas académicas</Text>
       <Text style={estilos.pieTexto}>
         Laboratorio de rendimiento y sensores: listas original y optimizada,
@@ -206,8 +211,8 @@ export default function PantallaTienda({
         accessibilityLabel="Abrir el laboratorio interno"
         style={({ pressed }) => [
           estilos.botonSecundario,
-          { marginTop: 10 },
-          pressed && { opacity: 0.7 },
+          { marginTop: 12 },
+          pressed && estilos.botonSecundarioPresionado,
         ]}
       >
         <Text style={estilos.botonSecundarioTexto}>Abrir laboratorio</Text>
@@ -245,7 +250,7 @@ export default function PantallaTienda({
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
-      style={{ backgroundColor: colores.crema }}
+      style={{ backgroundColor: colores.laca }}
     />
   );
 }

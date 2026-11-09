@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
+  Easing,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -24,6 +26,7 @@ import {
 } from '../logic/modeloIA';
 import { formatearCOP } from '../logic/formato';
 import estilosGlobales from '../styles';
+import { colores } from '../estilosTienda';
 
 /* =========================================================
    ASISTENTE IA · CONSULTAS SOBRE EL CATÁLOGO REAL
@@ -103,9 +106,36 @@ export default function AsistenteIA({
   const [respuesta, setRespuesta] = useState(null);
   const [indice, setIndice] = useState(0);
   const [historial, setHistorial] = useState([]);
+  const [entradaFoco, setEntradaFoco] = useState(false);
 
   const { width } = useWindowDimensions();
   const esAmplia = width >= 860;
+
+  /* Momento del asistente: la respuesta entra asentándose
+     (opacidad + desplazamiento corto), sin rebote. */
+  const opacidadRespuesta = useRef(new Animated.Value(1)).current;
+  const desplazamientoRespuesta = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!respuesta) return;
+
+    opacidadRespuesta.setValue(0);
+    desplazamientoRespuesta.setValue(10);
+    Animated.parallel([
+      Animated.timing(opacidadRespuesta, {
+        toValue: 1,
+        duration: 240,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(desplazamientoRespuesta, {
+        toValue: 0,
+        duration: 280,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [respuesta, opacidadRespuesta, desplazamientoRespuesta]);
 
   const lista = Array.isArray(productos) ? productos : [];
   const total = lista.length;
@@ -250,7 +280,7 @@ export default function AsistenteIA({
         : estilos.respuestaNeutra;
 
   return (
-    <View style={estilosGlobales.container}>
+    <View style={[estilosGlobales.container, estilos.fondo]}>
       <KeyboardAvoidingView
         style={estilos.flex}
         behavior={Platform.select({
@@ -273,9 +303,14 @@ export default function AsistenteIA({
                 accessibilityRole="button"
                 accessibilityLabel="Volver al catálogo de la tienda"
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                style={estilosGlobales.botonVolverTienda}
+                style={[estilosGlobales.botonVolverTienda, estilos.volverTienda]}
               >
-                <Text style={estilosGlobales.botonVolverTiendaTexto}>
+                <Text
+                  style={[
+                    estilosGlobales.botonVolverTiendaTexto,
+                    estilos.volverTiendaTexto,
+                  ]}
+                >
                   ← Volver al catálogo
                 </Text>
               </Pressable>
@@ -290,6 +325,8 @@ export default function AsistenteIA({
           <TituloSeccion
             titulo="Asistente IA"
             descripcion="Pregunta por el precio, el nombre o la descripción del producto activo. Todo se procesa localmente."
+            estiloTitulo={estilos.tituloTexto}
+            estiloDescripcion={estilos.tituloDescripcion}
           />
 
           <View style={estilos.indicadores}>
@@ -381,7 +418,7 @@ export default function AsistenteIA({
                   accessibilityHint="Avanza de forma cíclica al siguiente producto"
                   style={({ pressed }) => [
                     estilos.botonProducto,
-                    pressed && estilos.pulsado,
+                    pressed && estilos.botonSecundarioPresionado,
                   ]}
                 >
                   <Text style={estilos.botonSecundarioTexto}>
@@ -415,11 +452,14 @@ export default function AsistenteIA({
                 onChangeText={setPregunta}
                 editable={total > 0}
                 placeholder="Ej. ¿Cuánto cuesta este producto?"
-                placeholderTextColor="#5A6678"
+                placeholderTextColor={colores.textoTenue}
                 accessibilityLabel="Pregunta sobre el producto seleccionado"
                 accessibilityHint="Escribe una pregunta sobre precio, nombre o descripción"
+                onFocus={() => setEntradaFoco(true)}
+                onBlur={() => setEntradaFoco(false)}
                 style={[
                   estilos.entrada,
+                  entradaFoco && estilos.entradaFoco,
                   total === 0 && estilos.entradaDeshabilitada,
                 ]}
                 returnKeyType="send"
@@ -439,7 +479,7 @@ export default function AsistenteIA({
                     accessibilityState={{ disabled: total === 0 }}
                     style={({ pressed }) => [
                       estilos.sugerencia,
-                      pressed && estilos.pulsado,
+                      pressed && estilos.sugerenciaPresionado,
                       total === 0 && estilos.botonDeshabilitado,
                     ]}
                   >
@@ -458,7 +498,7 @@ export default function AsistenteIA({
                   style={({ pressed }) => [
                     estilos.botonPrimario,
                     total === 0 && estilos.botonDeshabilitado,
-                    pressed && estilos.pulsado,
+                    pressed && estilos.botonPrimarioPresionado,
                   ]}
                 >
                   <Text style={estilos.botonPrimarioTexto}>Consultar</Text>
@@ -471,7 +511,7 @@ export default function AsistenteIA({
                     accessibilityLabel="Siguiente producto"
                     style={({ pressed }) => [
                       estilos.botonSecundario,
-                      pressed && estilos.pulsado,
+                      pressed && estilos.botonSecundarioPresionado,
                     ]}
                   >
                     <Text style={estilos.botonSecundarioTexto}>
@@ -482,8 +522,15 @@ export default function AsistenteIA({
               </View>
 
               {/* ---------- RESPUESTA / VALIDACIÓN ---------- */}
-              <View
-                style={[estilos.respuesta, estiloRespuesta]}
+              <Animated.View
+                style={[
+                  estilos.respuesta,
+                  estiloRespuesta,
+                  {
+                    opacity: opacidadRespuesta,
+                    transform: [{ translateY: desplazamientoRespuesta }],
+                  },
+                ]}
                 accessibilityLiveRegion="polite"
               >
                 <Text
@@ -526,7 +573,7 @@ export default function AsistenteIA({
                     Dato verificado del producto activo (selección manual).
                   </Text>
                 )}
-              </View>
+              </Animated.View>
 
               {/* ---------- OPCIONES MANUALES ---------- */}
               {respuesta?.muestraOpciones && producto && (
@@ -544,7 +591,7 @@ export default function AsistenteIA({
                         accessibilityLabel={`${opcion.texto} de ${producto.nombre}`}
                         style={({ pressed }) => [
                           estilos.opcion,
-                          pressed && estilos.pulsado,
+                          pressed && estilos.opcionPresionado,
                         ]}
                       >
                         <Text style={estilos.opcionTexto}>
@@ -600,11 +647,34 @@ export default function AsistenteIA({
 }
 
 /* =========================================================
-   ESTILOS · MISMA PALETA OSCURA DEL LABORATORIO
+   ESTILOS · SISTEMA NEO KINPAKU (tokens de estilosTienda)
+   Misma base visual que la tienda: laca negra, oro kinpaku
+   como acento y pátina para los estados vivos.
 ========================================================= */
 
 const estilos = StyleSheet.create({
   flex: { flex: 1 },
+  fondo: { backgroundColor: colores.laca },
+  volverTienda: {
+    backgroundColor: colores.grafito,
+    borderColor: colores.hairline,
+    borderRadius: 4,
+  },
+  volverTiendaTexto: {
+    color: colores.oro,
+    fontWeight: '600',
+  },
+  tituloTexto: {
+    color: colores.champán,
+    fontSize: 22,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+  },
+  tituloDescripcion: {
+    color: colores.textoSuave,
+    fontSize: 13,
+    lineHeight: 19,
+  },
   contenido: {
     width: '100%',
     maxWidth: 1120,
@@ -619,35 +689,35 @@ const estilos = StyleSheet.create({
   indicador: {
     flexGrow: 1,
     minWidth: 130,
-    backgroundColor: '#0C111D',
+    backgroundColor: colores.panel,
     borderWidth: 1,
-    borderColor: '#202938',
-    borderRadius: 10,
+    borderColor: colores.hairline,
+    borderRadius: 4,
     paddingVertical: 9,
     paddingHorizontal: 12,
   },
   indicadorClave: {
-    color: '#617089',
-    fontSize: 8,
-    fontWeight: '800',
+    color: colores.textoTenue,
+    fontSize: 11,
+    fontWeight: '700',
     letterSpacing: 1,
   },
   indicadorValor: {
-    color: '#FFFFFF',
+    color: colores.champán,
     fontSize: 13,
-    fontWeight: '900',
+    fontWeight: '700',
     marginTop: 3,
   },
-  paneles: { gap: 12 },
+  paneles: { gap: 16 },
   panelesAmplios: { flexDirection: 'row', alignItems: 'flex-start' },
   panelMitad: { flex: 1, minWidth: 0 },
   panelCompleto: { width: '100%' },
   panel: {
-    backgroundColor: '#0C111D',
+    backgroundColor: colores.panel,
     borderWidth: 1,
-    borderColor: '#202938',
-    borderRadius: 16,
-    padding: 14,
+    borderColor: colores.hairline,
+    borderRadius: 4,
+    padding: 16,
   },
   panelCabecera: {
     flexDirection: 'row',
@@ -658,28 +728,28 @@ const estilos = StyleSheet.create({
     marginBottom: 10,
   },
   panelEtiqueta: {
-    color: '#00E5FF',
-    fontSize: 9,
-    fontWeight: '900',
+    color: colores.oro,
+    fontSize: 11,
+    fontWeight: '700',
     letterSpacing: 1.3,
   },
   contador: {
-    backgroundColor: '#0E1A28',
+    backgroundColor: colores.patinaTinte,
     borderWidth: 1,
-    borderColor: '#1E3A4A',
+    borderColor: colores.patinaBorde,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  contadorTexto: { color: '#00D9A6', fontSize: 9, fontWeight: '900' },
+  contadorTexto: { color: colores.patinaTexto, fontSize: 11, fontWeight: '700' },
   modeloBadge: {
-    color: '#00D9A6',
-    fontSize: 8,
-    fontWeight: '900',
+    color: colores.patinaTexto,
+    fontSize: 11,
+    fontWeight: '700',
     letterSpacing: 1,
-    backgroundColor: '#0E2320',
+    backgroundColor: colores.patinaTinte,
     borderWidth: 1,
-    borderColor: '#1E4A3F',
+    borderColor: colores.patinaBorde,
     borderRadius: 999,
     paddingHorizontal: 9,
     paddingVertical: 4,
@@ -688,80 +758,95 @@ const estilos = StyleSheet.create({
   productoImagen: {
     width: '100%',
     height: 175,
-    borderRadius: 12,
-    backgroundColor: '#18202D',
+    borderRadius: 4,
+    backgroundColor: colores.grafito,
     marginBottom: 12,
   },
   productoImagenAmplia: { height: 215 },
   imagenVacia: {
     width: '100%',
     height: 140,
-    borderRadius: 12,
-    backgroundColor: '#101827',
+    borderRadius: 4,
+    backgroundColor: colores.grafito,
     borderWidth: 1,
-    borderColor: '#202938',
+    borderColor: colores.hairline,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
   },
   imagenVaciaIcono: { fontSize: 34 },
-  imagenVaciaTexto: { color: '#617089', fontSize: 10, marginTop: 6 },
-  productoNombre: { color: '#FFFFFF', fontSize: 20, fontWeight: '900' },
+  imagenVaciaTexto: { color: colores.textoTenue, fontSize: 12, marginTop: 6 },
+  productoNombre: {
+    color: colores.champán,
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
   productoCategoria: {
-    color: '#00D9FF',
-    fontSize: 9,
-    fontWeight: '800',
+    color: colores.oro,
+    fontSize: 11,
+    fontWeight: '700',
     letterSpacing: 1.1,
     marginTop: 5,
   },
   productoPrecio: {
-    color: '#00D9A6',
+    color: colores.oro,
     fontSize: 22,
-    fontWeight: '900',
+    fontWeight: '700',
     marginTop: 8,
+    letterSpacing: -0.3,
   },
   productoDescripcion: {
-    color: '#8CA0B8',
-    fontSize: 11,
-    lineHeight: 17,
+    color: colores.textoSuave,
+    fontSize: 13,
+    lineHeight: 20,
     marginTop: 8,
     marginBottom: 14,
   },
   ayuda: {
-    color: '#8CA0B8',
-    fontSize: 11,
-    lineHeight: 16,
+    color: colores.textoSuave,
+    fontSize: 12,
+    lineHeight: 18,
     marginBottom: 10,
   },
   entrada: {
     width: '100%',
-    backgroundColor: '#131A27',
+    backgroundColor: colores.grafito,
     borderWidth: 1,
-    borderColor: '#2A3547',
-    borderRadius: 10,
+    borderColor: colores.hairline,
+    borderRadius: 4,
     paddingHorizontal: 12,
     paddingVertical: 10,
     minHeight: 48,
-    color: '#FFFFFF',
+    color: colores.champán,
     fontSize: 14,
   },
+  entradaFoco: { borderColor: colores.hairlineFuerte },
   entradaDeshabilitada: { opacity: 0.55 },
   sugerencias: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 8,
     marginTop: 8,
   },
   sugerencia: {
-    backgroundColor: '#101827',
+    backgroundColor: colores.grafito,
     borderWidth: 1,
-    borderColor: '#243043',
-    borderRadius: 8,
-    paddingHorizontal: 9,
-    paddingVertical: 6,
+    borderColor: colores.hairline,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     maxWidth: '100%',
   },
-  sugerenciaTexto: { color: '#8FA3BF', fontSize: 9, fontWeight: '700' },
+  sugerenciaPresionado: {
+    backgroundColor: colores.grafito2,
+    borderColor: colores.hairlineFuerte,
+  },
+  sugerenciaTexto: {
+    color: colores.texto,
+    fontSize: 12,
+    fontWeight: '600',
+  },
   botones: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -773,103 +858,108 @@ const estilos = StyleSheet.create({
     flex: 1,
     minWidth: 140,
     minHeight: 46,
-    borderRadius: 10,
-    backgroundColor: '#00E5FF',
+    borderRadius: 2,
+    backgroundColor: colores.oro,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 14,
   },
+  botonPrimarioPresionado: { backgroundColor: colores.oroSuave },
   botonPrimarioTexto: {
-    color: '#04121A',
+    color: colores.darkInk,
     fontSize: 13,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   botonSecundario: {
     flex: 1,
     minWidth: 150,
     minHeight: 46,
-    borderRadius: 10,
-    backgroundColor: '#131A27',
+    borderRadius: 2,
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#2A3547',
+    borderColor: colores.hairlineFuerte,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 14,
     marginTop: 0,
   },
+  botonSecundarioPresionado: {
+    backgroundColor: colores.oroActivo,
+    borderColor: colores.oro,
+  },
   botonProducto: {
     minHeight: 46,
-    borderRadius: 10,
-    backgroundColor: '#131A27',
+    borderRadius: 2,
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#2A3547',
+    borderColor: colores.hairlineFuerte,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 14,
   },
   botonSecundarioTexto: {
-    color: '#DCE3EE',
+    color: colores.oro,
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   botonDeshabilitado: { opacity: 0.45 },
-  pulsado: { opacity: 0.75 },
   respuesta: {
     minHeight: 112,
-    borderRadius: 12,
+    borderRadius: 4,
     borderWidth: 1,
-    padding: 12,
+    padding: 16,
     justifyContent: 'center',
   },
   respuestaNeutra: {
-    backgroundColor: '#0F1724',
-    borderColor: '#202938',
+    backgroundColor: colores.grafito,
+    borderColor: colores.hairline,
   },
   respuestaExito: {
-    backgroundColor: '#0E2320',
-    borderColor: '#1E4A3F',
+    backgroundColor: colores.exitoTinte,
+    borderColor: colores.patinaBorde,
   },
   respuestaError: {
-    backgroundColor: '#2A1316',
-    borderColor: '#5A2A2A',
+    backgroundColor: colores.errorTinte,
+    borderColor: colores.errorBorde,
   },
   respuestaEtiqueta: {
-    color: '#00D9A6',
-    fontSize: 9,
-    fontWeight: '900',
+    color: colores.patinaTexto,
+    fontSize: 11,
+    fontWeight: '700',
     letterSpacing: 1.1,
     marginBottom: 6,
   },
-  respuestaEtiquetaError: { color: '#FF8A8A' },
+  respuestaEtiquetaError: { color: colores.errorTexto },
   respuestaTexto: {
-    color: '#DCE3EE',
+    color: colores.champán,
     fontSize: 13,
-    lineHeight: 19,
+    lineHeight: 20,
   },
-  respuestaTextoError: { color: '#FFB4B4' },
+  respuestaTextoError: { color: colores.errorTexto },
   confianza: {
-    color: '#617089',
-    fontSize: 9,
-    fontWeight: '700',
+    color: colores.textoTenue,
+    fontSize: 12,
+    fontWeight: '600',
     marginTop: 8,
   },
   evidencia: {
-    color: '#00D9A6',
-    fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'monospace',
+    color: colores.patinaTexto,
+    fontSize: 12,
+    fontWeight: '600',
     marginTop: 8,
-    lineHeight: 15,
+    lineHeight: 16,
   },
   opciones: {
     borderTopWidth: 1,
-    borderTopColor: '#202938',
+    borderTopColor: colores.hairline,
     marginTop: 12,
     paddingTop: 12,
   },
   opcionesTitulo: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '900',
+    color: colores.champán,
+    fontSize: 13,
+    fontWeight: '700',
     marginBottom: 10,
   },
   opcionesFila: {
@@ -883,54 +973,58 @@ const estilos = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 12,
     paddingHorizontal: 14,
-    borderRadius: 10,
+    borderRadius: 2,
     borderWidth: 1,
-    borderColor: '#00E5FF',
-    backgroundColor: '#0C111D',
+    borderColor: colores.hairlineFuerte,
+    backgroundColor: 'transparent',
     minWidth: 110,
   },
+  opcionPresionado: {
+    backgroundColor: colores.oroActivo,
+    borderColor: colores.oro,
+  },
   opcionTexto: {
-    color: '#00E5FF',
+    color: colores.oro,
     fontSize: 13,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   historial: {
     borderTopWidth: 1,
-    borderTopColor: '#202938',
+    borderTopColor: colores.hairline,
     marginTop: 14,
     paddingTop: 12,
   },
   historialTitulo: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '900',
+    color: colores.champán,
+    fontSize: 13,
+    fontWeight: '700',
     marginBottom: 8,
   },
   historialItem: {
-    borderLeftWidth: 2,
-    borderLeftColor: '#00D9A6',
-    paddingLeft: 9,
+    borderLeftWidth: 1,
+    borderLeftColor: colores.patina,
+    paddingLeft: 10,
     marginBottom: 9,
   },
-  historialItemError: { borderLeftColor: '#FF8A8A' },
+  historialItemError: { borderLeftColor: colores.error },
   historialPregunta: {
-    color: '#AAB4C5',
-    fontSize: 10,
-    fontWeight: '800',
+    color: colores.texto,
+    fontSize: 12,
+    fontWeight: '600',
   },
   historialTexto: {
-    color: '#617089',
-    fontSize: 9,
-    lineHeight: 14,
+    color: colores.textoTenue,
+    fontSize: 12,
+    lineHeight: 16,
     marginTop: 3,
   },
-  historialTextoError: { color: '#B98A8A' },
+  historialTextoError: { color: colores.errorTexto },
   notaPie: {
-    color: '#4F5D72',
-    fontSize: 9,
-    lineHeight: 14,
+    color: colores.textoTenue,
+    fontSize: 12,
+    lineHeight: 16,
     textAlign: 'center',
-    marginTop: 14,
+    marginTop: 16,
     alignSelf: 'center',
     maxWidth: 620,
   },

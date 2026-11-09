@@ -7,11 +7,18 @@ import styles from '../styles';
    TÍTULO DE SECCIÓN
 ========================================================= */
 
-export default function TituloSeccion({ titulo, descripcion }) {
+export default function TituloSeccion({
+  titulo,
+  descripcion,
+  estiloTitulo,
+  estiloDescripcion,
+}) {
   return (
     <View style={styles.tituloSeccion}>
-      <Text style={styles.tituloSeccionTexto}>{titulo}</Text>
-      <Text style={styles.descripcionSeccion}>{descripcion}</Text>
+      <Text style={[styles.tituloSeccionTexto, estiloTitulo]}>{titulo}</Text>
+      <Text style={[styles.descripcionSeccion, estiloDescripcion]}>
+        {descripcion}
+      </Text>
     </View>
   );
 }

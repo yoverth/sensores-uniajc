@@ -44,7 +44,7 @@ export default function EncabezadoTienda({
           hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           style={({ pressed }) => [
             estilos.iconoBoton,
-            pressed && { opacity: 0.7 },
+            pressed && estilos.iconoBotonPresionado,
           ]}
         >
           <Text style={estilos.iconoBotonTexto}>🧪</Text>
@@ -57,7 +57,7 @@ export default function EncabezadoTienda({
           hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           style={({ pressed }) => [
             estilos.iconoBoton,
-            pressed && { opacity: 0.7 },
+            pressed && estilos.iconoBotonPresionado,
           ]}
         >
           <Text style={estilos.iconoBotonTexto}>🛍️</Text>

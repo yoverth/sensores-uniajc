@@ -30,7 +30,7 @@ export default function SelectorCantidad({
         style={({ pressed }) => [
           estilos.cantidadBoton,
           !puedeMenos && estilos.botonDeshabilitado,
-          pressed && { opacity: 0.7 },
+          pressed && estilos.cantidadBotonPresionado,
         ]}
       >
         <Text style={estilos.cantidadBotonTexto}>−</Text>
@@ -50,7 +50,7 @@ export default function SelectorCantidad({
         style={({ pressed }) => [
           estilos.cantidadBoton,
           !puedeMas && estilos.botonDeshabilitado,
-          pressed && { opacity: 0.7 },
+          pressed && estilos.cantidadBotonPresionado,
         ]}
       >
         <Text style={estilos.cantidadBotonTexto}>+</Text>
