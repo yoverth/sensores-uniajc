@@ -24,11 +24,14 @@ import {
    Usa el acelerómetro real. El premio se calcula con la fuerza
    de la sacudida (pico en g), no con números al azar sueltos:
    el azar solo elige el porcentaje dentro de la regla alcanzada.
+   Con un cupón vigente los botones quedan bloqueados hasta que
+   venza (15 min) o se use en un pedido.
 ========================================================= */
 
 export default function PantallaAgitaYGana({
   carrito,
   promocion,
+  promocionRetirada,
   onGanarPromocion,
   onIrCarrito,
   onIrTienda,
@@ -38,6 +41,7 @@ export default function PantallaAgitaYGana({
   const [espera, setEspera] = useState(0);
   const [pico, setPico] = useState(0);
   const [aviso, setAviso] = useState(null);
+  const [ahora, setAhora] = useState(() => Date.now());
 
   const escala = useRef(new Animated.Value(0.7)).current;
   const opacidad = useRef(new Animated.Value(0)).current;
@@ -68,6 +72,7 @@ export default function PantallaAgitaYGana({
     const cupon = crearPromocion(porcentaje);
 
     setPremio(cupon);
+    setAhora(Date.now());
     setAviso(null);
 
     /* El cupón queda guardado en la sesión apenas se gana, para que no
@@ -134,8 +139,29 @@ export default function PantallaAgitaYGana({
     return () => clearTimeout(id);
   }, [espera]);
 
+  /* Mientras exista un cupón vigente (el del carrito o el que fue
+     quitado), el juego queda bloqueado: no se pueden ganar dos en
+     15 minutos. Se libera cuando venza o cuando se use en un pedido. */
+  const cuponGuardado = promocion || promocionRetirada;
+  const cuponVigente = Boolean(premio) && promocionVigente(premio, ahora);
+  const bloqueado =
+    (Boolean(cuponGuardado) && promocionVigente(cuponGuardado, ahora)) ||
+    cuponVigente;
+  const minutosBloqueo = minutosRestantes(cuponGuardado || premio, ahora);
+  const agitarDeshabilitado =
+    !activo && (disponible === false || espera > 0 || bloqueado);
+
+  /* El reloj corre mientras haya un cupón en juego (vigente o no):
+     muestra la cuenta regresiva y libera los botones en cuanto
+     vence el cupón. Sin cupón no hay nada que contar. */
+  useEffect(() => {
+    if (!cuponGuardado && !premio) return undefined;
+
+    const id = setInterval(() => setAhora(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [cuponGuardado, premio]);
+
   const resumen = calcularResumen(carrito, premio, 'recoger');
-  const cuponVigente = Boolean(premio) && promocionVigente(premio);
 
   const notaCupon = !premio
     ? ''
@@ -159,7 +185,7 @@ export default function PantallaAgitaYGana({
             : 'Listo';
 
   async function comenzar() {
-    if (disponible === false) return;
+    if (disponible === false || bloqueado) return;
 
     setAviso(null);
     setPremio(null);
@@ -169,7 +195,7 @@ export default function PantallaAgitaYGana({
   }
 
   async function reintentar() {
-    if (espera > 0) return;
+    if (espera > 0 || bloqueado) return;
 
     setAviso(null);
     setPremio(null);
@@ -188,11 +214,13 @@ export default function PantallaAgitaYGana({
         desbloquea un descuento.
       </Text>
 
-      {promocion && !premio && (
+      {bloqueado && cuponGuardado && !premio && (
         <View style={[estilos.avisoInline, estilos.avisoExito]}>
           <Text style={[estilos.avisoTexto, estilos.avisoTextoExito]}>
-            Ya tienes un cupón del {promocion.porcentaje}% en el carrito. Si
-            ganas otro, reemplaza al anterior: los descuentos no se acumulan.
+            {promocion
+              ? `Tienes un cupón del ${promocion.porcentaje}% vigente en tu carrito (${minutosBloqueo} min). `
+              : `Quitaste el cupón del ${promocionRetirada.porcentaje}% del carrito, pero sigue guardado (${minutosBloqueo} min): restaúralo desde allí. `}
+            Agitar se activa cuando venza o cuando lo uses.
           </Text>
         </View>
       )}
@@ -309,12 +337,16 @@ export default function PantallaAgitaYGana({
 
       <Pressable
         onPress={activo ? detener : comenzar}
-        disabled={!activo && (disponible === false || espera > 0)}
+        disabled={agitarDeshabilitado}
         accessibilityRole="button"
         accessibilityLabel={
-          activo ? 'Detener la detección de movimiento' : 'Comenzar a agitar'
+          activo
+            ? 'Detener la detección de movimiento'
+            : bloqueado
+              ? 'Cupón vigente: agitar se activa cuando venza o lo uses'
+              : 'Comenzar a agitar'
         }
-        accessibilityState={{ disabled: !activo && (disponible === false || espera > 0) }}
+        accessibilityState={{ disabled: agitarDeshabilitado }}
         style={({ pressed }) => pressed && estilos.circuloPresionado}
       >
         <Animated.View
@@ -322,19 +354,27 @@ export default function PantallaAgitaYGana({
             estilos.circuloAgitar,
             escuchando && estilos.circuloEscuchando,
             { transform: [{ scale: pulso }] },
-            !activo && espera > 0 && estilos.botonDeshabilitado,
+            !activo && (espera > 0 || bloqueado) && estilos.botonDeshabilitado,
           ]}
         >
           <Text style={estilos.circuloAgitarIcono}>{activo ? '📳' : '📱'}</Text>
           <Text style={estilos.circuloAgitarTexto}>
-            {activo ? '¡Agita ahora!' : espera > 0 ? `Espera ${espera}s` : 'Comenzar'}
+            {activo
+              ? '¡Agita ahora!'
+              : bloqueado
+                ? 'Cupón vigente'
+                : espera > 0
+                  ? `Espera ${espera}s`
+                  : 'Comenzar'}
           </Text>
           <Text style={estilos.circuloAgitarSub}>
             {activo
               ? 'Mantén el movimiento firme'
-              : espera > 0
-                ? 'Un intento a la vez'
-                : 'Toca para activar el sensor'}
+              : bloqueado
+                ? `Vence en ${minutosBloqueo} min`
+                : espera > 0
+                  ? 'Un intento a la vez'
+                  : 'Toca para activar el sensor'}
           </Text>
         </Animated.View>
       </Pressable>
@@ -354,7 +394,7 @@ export default function PantallaAgitaYGana({
             <Text style={estilos.premioTexto}>
               Compra mínima:{' '}
               {premio.minimo > 0 ? formatearCOP(premio.minimo) : 'sin mínimo'}.
-              Vigencia: {minutosRestantes(premio)} de {VIGENCIA_MINUTOS} min.
+              Vigencia: {minutosRestantes(premio, ahora)} de {VIGENCIA_MINUTOS} min.
             </Text>
 
             <Text style={estilos.premioCondiciones}>
@@ -385,18 +425,22 @@ export default function PantallaAgitaYGana({
 
           <Pressable
             onPress={reintentar}
-            disabled={espera > 0}
+            disabled={espera > 0 || bloqueado}
             accessibilityRole="button"
             accessibilityLabel="Intentar de nuevo"
-            accessibilityState={{ disabled: espera > 0 }}
+            accessibilityState={{ disabled: espera > 0 || bloqueado }}
             style={({ pressed }) => [
               estilos.botonClaro,
-              espera > 0 && estilos.botonDeshabilitado,
+              (espera > 0 || bloqueado) && estilos.botonDeshabilitado,
               pressed && estilos.botonClaroPresionado,
             ]}
           >
             <Text style={estilos.botonClaroTexto}>
-              {espera > 0 ? `Podrás intentar en ${espera}s` : 'Intentar de nuevo'}
+              {bloqueado
+                ? `Cupón vigente · agita en ${minutosBloqueo} min`
+                : espera > 0
+                  ? `Podrás intentar en ${espera}s`
+                  : 'Intentar de nuevo'}
             </Text>
           </Pressable>
         </>

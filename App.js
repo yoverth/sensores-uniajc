@@ -38,6 +38,7 @@ import {
   eliminarDelCarrito,
 } from './src/logic/carrito';
 import { crearPedido } from './src/services/pedidos';
+import { promocionVigente } from './src/logic/promociones';
 
 /* ---------- ESTILOS ---------- */
 import estilosTienda from './src/estilosTienda';
@@ -58,6 +59,9 @@ export default function App() {
 
   const [carrito, setCarrito] = useState([]);
   const [promocion, setPromocion] = useState(null);
+  /* Cupón retirado del carrito: se conserva para poder restaurarlo
+     sin volver a jugar, hasta que venza o se use en un pedido. */
+  const [promocionRetirada, setPromocionRetirada] = useState(null);
   const [pedidos, setPedidos] = useState([]);
   const [pedidoConfirmado, setPedidoConfirmado] = useState(null);
   const [confirmando, setConfirmando] = useState(false);
@@ -112,15 +116,40 @@ export default function App() {
     mostrarAviso('Producto eliminado del carrito');
   }
 
+  /* Quitar el cupón no lo borra: queda guardado para restaurarlo
+     desde el carrito mientras siga vigente. */
   function quitarPromocion() {
+    if (promocion) {
+      setPromocionRetirada(promocion);
+    }
+
     setPromocion(null);
-    mostrarAviso('Cupón retirado del carrito');
+    mostrarAviso('Cupón retirado · puedes restaurarlo desde tu carrito');
+  }
+
+  function restaurarPromocion() {
+    if (!promocionRetirada) return;
+
+    if (!promocionVigente(promocionRetirada)) {
+      mostrarAviso(
+        'El cupón venció. Agita de nuevo para conseguir otro.',
+        'error'
+      );
+      return;
+    }
+
+    setPromocion(promocionRetirada);
+    setPromocionRetirada(null);
+    mostrarAviso(
+      `Cupón del ${promocionRetirada.porcentaje}% restaurado en tu carrito`
+    );
   }
 
   /* El cupón se guarda apenas se gana. Si el carrito todavía no llega
      al mínimo, queda pendiente y se activa solo al alcanzarlo. */
   function registrarCupon(cupon) {
     setPromocion(cupon);
+    setPromocionRetirada(null);
     mostrarAviso(
       `Cupón del ${cupon.porcentaje}% guardado · revisa tu carrito`
     );
@@ -150,7 +179,17 @@ export default function App() {
       setPedidos((actual) => [pedido, ...actual]);
       setPedidoConfirmado(pedido);
       setCarrito([]);
-      setPromocion(null);
+
+      if (resumen.promoAplicada) {
+        /* El cupón se gastó en este pedido: «Agita y gana» se libera. */
+        setPromocion(null);
+        setPromocionRetirada(null);
+      } else if (promocion) {
+        /* No se usó (faltó el mínimo): queda guardado por si lo restaura. */
+        setPromocionRetirada(promocion);
+        setPromocion(null);
+      }
+
       setVista('confirmacion');
 
       return pedido;
@@ -251,9 +290,11 @@ export default function App() {
               <PantallaCarrito
                 carrito={carrito}
                 promocion={promocion}
+                promocionRetirada={promocionRetirada}
                 onCambiarCantidad={cambiar}
                 onEliminar={eliminar}
                 onQuitarPromocion={quitarPromocion}
+                onRestaurarPromocion={restaurarPromocion}
                 onAbrirAgita={() => setVista('agita')}
                 onIrCheckout={() => setVista('checkout')}
                 onIrTienda={() => setVista('inicio')}
@@ -282,6 +323,7 @@ export default function App() {
               <PantallaAgitaYGana
                 carrito={carrito}
                 promocion={promocion}
+                promocionRetirada={promocionRetirada}
                 onGanarPromocion={registrarCupon}
                 onIrCarrito={() => setVista('carrito')}
                 onIrTienda={() => setVista('inicio')}

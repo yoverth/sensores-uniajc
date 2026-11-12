@@ -16,9 +16,11 @@ import { minutosRestantes, promocionVigente } from '../../logic/promociones';
 export default function PantallaCarrito({
   carrito,
   promocion,
+  promocionRetirada,
   onCambiarCantidad,
   onEliminar,
   onQuitarPromocion,
+  onRestaurarPromocion,
   onAbrirAgita,
   onIrCheckout,
   onIrTienda,
@@ -58,6 +60,10 @@ export default function PantallaCarrito({
   }
 
   const cuponVencido = promocion && !promocionVigente(promocion);
+  /* Cupón quitado que todavía se puede restaurar (mismo descuento,
+     sin volver a «Agita y gana»). */
+  const cuponRetirado =
+    !promocion && promocionRetirada && promocionVigente(promocionRetirada);
 
   return (
     <ScrollView contentContainerStyle={estilos.contenido}>
@@ -169,6 +175,35 @@ export default function PantallaCarrito({
               <Text style={estilos.promoQuitarTexto}>Quitar cupón</Text>
             </Pressable>
           </View>
+        </View>
+      ) : cuponRetirado ? (
+        <View style={estilos.promoBox}>
+          <Text style={estilos.promoBoxTitulo}>
+            🎟️ Cupón del {promocionRetirada.porcentaje}% quitado
+          </Text>
+          <Text style={estilos.promoBoxTexto}>
+            Sigue guardado: restáuralo para aplicar el mismo descuento a
+            este pedido, sin tener que agitar de nuevo.
+          </Text>
+
+          <Text style={estilos.promoBoxEstado}>
+            Vigencia: {minutosRestantes(promocionRetirada)} min · 1 uso · no
+            acumulable
+          </Text>
+
+          <Pressable
+            onPress={onRestaurarPromocion}
+            accessibilityRole="button"
+            accessibilityLabel={`Restaurar el cupón del ${promocionRetirada.porcentaje} por ciento`}
+            style={({ pressed }) => [
+              estilos.botonAncho,
+              pressed && estilos.botonAnchoPresionado,
+            ]}
+          >
+            <Text style={estilos.botonAnchoTexto}>
+              Restaurar cupón del {promocionRetirada.porcentaje}%
+            </Text>
+          </Pressable>
         </View>
       ) : (
         <View style={estilos.promoBox}>
