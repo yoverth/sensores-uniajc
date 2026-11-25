@@ -1,117 +1,60 @@
 import { Platform, StyleSheet } from 'react-native';
 
+import {
+  AREA_TACTIL_MIN,
+  COLORES_SEMANTICOS,
+  ESCALA_TIPOGRAFICA,
+  ESPACIADO,
+  FUENTES,
+  RADIOS,
+  crearSombras,
+} from './theme/tokens';
+
 /* =========================================================
    ESTILOS DE LA TIENDA · PASTELERÍA LA T
-   Sistema visual «Neo Kinpaku» (DESIGN.md): laca negra cálida,
-   oro kinpaku como acento primario y pátina verdigris para el
-   estado. Tokens convertidos de los valores OKLCH de DESIGN.md.
-   (El laboratorio conserva su tema en `styles.js`.)
+   Consume los tokens de `src/theme/tokens.js` para resolver
+   las dos paletas («claro» por defecto y «oscuro») con
+   jerarquía visual clara y áreas táctiles WCAG AA (>= 44 px).
 ========================================================= */
 
-/* ---------- PALETA (tokens OKLCH -> hex) ---------- */
-export const colores = {
-  /* Superficies */
-  laca: '#010101', // lacquer-black · fondo de página
-  lacaProfunda: '#000000', // lacquer-deep · el inset más hondo
-  panel: '#050403', // raised-lacquer · tarjetas y paneles
-  grafito: '#0C0B08', // graphite · campos y superficies inactivas
-  grafito2: '#151410', // graphite-2 · píldoras y cromo inactivo
+export const PALETAS = COLORES_SEMANTICOS;
+export const MODOS = ['claro', 'oscuro'];
+export const colores = PALETAS.oscuro;
+export const fuentes = FUENTES;
 
-  /* Acentos */
-  oro: '#FFBA00', // kinpaku-gold · acento primario (CTA, estado activo)
-  oroSuave: '#E7CE9D', // kinpaku-pale · elevación al presionar
-  oroRico: '#DDAB46', // kinpaku-rich
-  oroHondo: '#9F7D45', // kinpaku-deep
-  patina: '#0EB6AC', // verdigris-patina · estado vivo, contraste
-  patinaTexto: '#68C3BD', // patina-text · texto pequeño legible
-  patinaPálida: '#8ED3CC', // patina-pale
-  patinaHonda: '#146F69', // patina-deep
+/* Devuelve { colores, estilos } resueltos para el modo pedido. */
+export function crearEstilos(modo = 'claro') {
+  const tema = PALETAS[modo] ? modo : 'claro';
+  const colores = PALETAS[tema];
+  const { suave: sombraSuave, tarjeta: sombraTarjeta } = crearSombras(tema);
 
-  /* Texto */
-  champán: '#E1E1E1', // champagne · titulares
-  texto: '#D7D7D7', // text-warm · cuerpo
-  textoSuave: '#A4A4A4', // text-muted · metadatos
-  textoTenue: '#868686', // text-faint · contenido apagado
-  textoApagado: '#696969', // text-mute-deep · deshabilitado
-
-  /* Estado */
-  error: '#C25237', // vermilion-warning
-  errorTexto: '#ED896A', // vermilion legible sobre laca (8.2:1)
-  exito: '#7BC27E', // success legible sobre laca (9.6:1)
-  exitoTexto: '#62BB78', // success sobre su propia superficie tintada
-  darkInk: '#0B0903', // dark-ink · texto sobre oro (11.6:1)
-  tintaSobreOro: '#3A2B0D', // cuerpo secundario sobre oro (8:1)
-  tintaSobreOroTenue: '#5B4315', // detalle sobre oro (5.4:1)
-
-  /* Reglas y tintes */
-  hairline: 'rgba(183,183,183,0.16)', // gold-hairline (neutral) · borde por defecto
-  hairlineFuerte: 'rgba(199,166,103,0.6)', // gold-hairline-strong · foco y activo
-  oroTinte: 'rgba(255,186,0,0.08)', // relleno de oro suave
-  oroActivo: 'rgba(255,186,0,0.18)', // relleno activo
-  oroBorde: 'rgba(255,186,0,0.30)', // borde de oro suave
-  patinaTinte: 'rgba(58,179,173,0.10)',
-  patinaBorde: 'rgba(58,179,173,0.45)',
-  errorTinte: 'rgba(194,82,55,0.16)',
-  errorBorde: 'rgba(194,82,55,0.50)',
-  errorTinteFuerte: 'rgba(194,82,55,0.22)',
-  exitoTinte: 'rgba(98,187,120,0.14)',
-};
-
-/* ---------- TIPOGRAFÍA ----------
-   Sin fuentes nuevas (restricción del proyecto): el display usa
-   el corte fino instalado en cada plataforma y el cuerpo, la sans
-   del sistema. La escala respeta los pasos de DESIGN.md. */
-export const fuentes = {
-  display: Platform.select({
-    ios: 'Helvetica Neue',
-    android: 'sans-serif-thin',
-    default: undefined,
-  }),
-  mono: Platform.select({
-    ios: 'Menlo',
-    android: 'monospace',
-    default: 'monospace',
-  }),
-};
-
-/* Sombra neutra con desplazamiento y desenfoque suave
-   (Panel Setback / CTA Lift de DESIGN.md). */
-const sombraSuave = Platform.select({
-  ios: {
-    shadowColor: '#000000',
-    shadowOpacity: 0.5,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 12 },
-  },
-  android: { elevation: 6 },
-  default: { boxShadow: '0 12px 28px rgba(0,0,0,0.5)' },
-});
-
-const estilosTienda = StyleSheet.create({
+  const estilos = StyleSheet.create({
   /* ---------- ESTRUCTURA ---------- */
   app: { flex: 1, backgroundColor: colores.laca },
   contenido: {
-    paddingHorizontal: 16,
-    paddingBottom: 130,
+    paddingHorizontal: ESPACIADO.md,
+    paddingBottom: 140,
     width: '100%',
     maxWidth: 1120,
     alignSelf: 'center',
   },
-  filaProductos: { gap: 16 },
+  filaProductos: { gap: ESPACIADO.md },
   seccionFila: {
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'space-between',
-    marginTop: 24,
-    marginBottom: 8,
+    marginTop: ESPACIADO.lg,
+    marginBottom: ESPACIADO.sm,
   },
   seccionTitulo: {
+    ...ESCALA_TIPOGRAFICA.h3,
     color: colores.champán,
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: -0.2,
   },
-  seccionCuenta: { color: colores.textoSuave, fontSize: 13, fontWeight: '500' },
+  seccionCuenta: {
+    ...ESCALA_TIPOGRAFICA.caption,
+    color: colores.textoSuave,
+    fontWeight: '600',
+  },
 
   /* ---------- ENCABEZADO ---------- */
   header: {
@@ -156,9 +99,9 @@ const estilosTienda = StyleSheet.create({
   },
   accionesHeader: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   iconoBoton: {
-    width: 40,
-    height: 40,
-    borderRadius: 4,
+    minWidth: AREA_TACTIL_MIN,
+    minHeight: AREA_TACTIL_MIN,
+    borderRadius: RADIOS.sm,
     backgroundColor: colores.grafito,
     borderWidth: 1,
     borderColor: colores.hairline,
@@ -202,7 +145,7 @@ const estilosTienda = StyleSheet.create({
   heroCirculo: {
     position: 'absolute',
     borderRadius: 999,
-    backgroundColor: 'rgba(255,186,0,0.07)',
+    backgroundColor: colores.oroTinte,
   },
   heroTitulo: {
     fontFamily: fuentes.display,
@@ -273,8 +216,10 @@ const estilosTienda = StyleSheet.create({
     borderRadius: 4,
     borderWidth: 1,
     borderColor: colores.hairline,
-    paddingHorizontal: 16,
-    minHeight: 48,
+    paddingLeft: 14,
+    paddingRight: 8,
+    paddingVertical: 4,
+    minHeight: 52,
     marginTop: 16,
   },
   buscadorFoco: { borderColor: colores.hairlineFuerte },
@@ -284,10 +229,147 @@ const estilosTienda = StyleSheet.create({
     minWidth: 0,
     color: colores.champán,
     fontSize: 14,
-    paddingVertical: 12,
+    paddingVertical: 10,
   },
-  buscadorLimpiar: { paddingHorizontal: 8, paddingVertical: 6 },
-  buscadorLimpiarTexto: { color: colores.textoSuave, fontSize: 14 },
+  buscadorLimpiar: {
+    minWidth: AREA_TACTIL_MIN,
+    minHeight: AREA_TACTIL_MIN,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buscadorLimpiarTexto: { color: colores.textoSuave, fontSize: 14, fontWeight: '600' },
+  buscadorFiltroBtn: {
+    minHeight: AREA_TACTIL_MIN,
+    paddingHorizontal: 12,
+    borderRadius: RADIOS.pill,
+    borderWidth: 1,
+    borderColor: colores.hairlineFuerte,
+    backgroundColor: colores.panel,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  buscadorFiltroBtnActivo: {
+    backgroundColor: colores.oro,
+    borderColor: colores.oro,
+  },
+  buscadorFiltroBtnTexto: {
+    color: colores.oro,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  buscadorFiltroBtnTextoActivo: {
+    color: colores.darkInk,
+  },
+  filtroPanel: {
+    marginTop: 10,
+    backgroundColor: colores.panel,
+    borderRadius: RADIOS.md,
+    borderWidth: 1,
+    borderColor: colores.hairline,
+    padding: 14,
+    gap: 12,
+    ...sombraTarjeta,
+  },
+  filtroCabecera: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  filtroTitulo: {
+    ...ESCALA_TIPOGRAFICA.bodyStrong,
+    color: colores.champán,
+  },
+  filtroLimpiarBtn: {
+    minHeight: AREA_TACTIL_MIN,
+    paddingHorizontal: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filtroLimpiarTexto: {
+    color: colores.oro,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  filtroGrupo: {
+    gap: 8,
+  },
+  filtroGrupoTitulo: {
+    ...ESCALA_TIPOGRAFICA.caption,
+    color: colores.textoSuave,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  filtroChipsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  filtroChip: {
+    minHeight: AREA_TACTIL_MIN,
+    paddingHorizontal: 12,
+    borderRadius: RADIOS.pill,
+    borderWidth: 1,
+    borderColor: colores.hairline,
+    backgroundColor: colores.grafito,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filtroChipActivo: {
+    backgroundColor: colores.oro,
+    borderColor: colores.oro,
+  },
+  filtroChipTexto: {
+    color: colores.texto,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  filtroChipTextoActivo: {
+    color: colores.darkInk,
+    fontWeight: '700',
+  },
+  filtrosActivosFila: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 10,
+  },
+  filtroActivoChip: {
+    minHeight: 36,
+    paddingHorizontal: 10,
+    borderRadius: RADIOS.pill,
+    backgroundColor: colores.oroTinte,
+    borderWidth: 1,
+    borderColor: colores.oroBorde,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  filtroActivoTexto: {
+    color: colores.oro,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  vacioResetBtn: {
+    marginTop: 8,
+    minHeight: AREA_TACTIL_MIN,
+    paddingHorizontal: 18,
+    borderRadius: RADIOS.pill,
+    borderWidth: 1,
+    borderColor: colores.hairlineFuerte,
+    backgroundColor: colores.panel,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  vacioResetTexto: {
+    color: colores.oro,
+    fontSize: 13,
+    fontWeight: '700',
+  },
 
   /* ---------- CATEGORÍAS ---------- */
   categoriasScroll: { marginTop: 16 },
@@ -319,17 +401,16 @@ const estilosTienda = StyleSheet.create({
   tarjeta: {
     flex: 1,
     backgroundColor: colores.panel,
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginBottom: 16,
-  },
-  tarjetaZona: {
     borderWidth: 1,
     borderColor: colores.hairline,
+    borderRadius: RADIOS.md,
+    overflow: 'hidden',
+    marginBottom: ESPACIADO.md,
+    ...sombraTarjeta,
   },
+  tarjetaZona: { width: '100%' },
   tarjetaPresionada: {
-    borderColor: colores.hairlineFuerte,
-    backgroundColor: '#0A0908',
+    backgroundColor: colores.panelPresionado,
   },
   tarjetaImagen: {
     width: '100%',
@@ -358,8 +439,8 @@ const estilosTienda = StyleSheet.create({
   tarjetaCuerpo: { padding: 16 },
   tarjetaCategoria: {
     color: colores.textoSuave,
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     letterSpacing: 0.8,
     textTransform: 'uppercase',
   },
@@ -389,7 +470,13 @@ const estilosTienda = StyleSheet.create({
     marginTop: 4,
   },
   tarjetaStockBajo: { color: colores.errorTexto },
-  tarjetaBotones: { flexDirection: 'row', gap: 8, marginTop: 16 },
+  tarjetaBotones: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
   botonSecundario: {
     flex: 1,
     minHeight: 44,
@@ -467,9 +554,9 @@ const estilosTienda = StyleSheet.create({
     marginTop: 8,
   },
   cantidadBoton: {
-    width: 36,
-    height: 36,
-    borderRadius: 4,
+    minWidth: AREA_TACTIL_MIN,
+    minHeight: AREA_TACTIL_MIN,
+    borderRadius: RADIOS.sm,
     backgroundColor: colores.grafito,
     borderWidth: 1,
     borderColor: colores.hairline,
@@ -492,7 +579,13 @@ const estilosTienda = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  eliminarBoton: { alignSelf: 'flex-start', padding: 6, marginTop: 2 },
+  eliminarBoton: {
+    minWidth: AREA_TACTIL_MIN,
+    minHeight: AREA_TACTIL_MIN,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: -4,
+  },
   eliminarTexto: { fontSize: 14 },
 
   /* ---------- RESUMEN DE PRECIOS ---------- */
@@ -575,7 +668,9 @@ const estilosTienda = StyleSheet.create({
   promoQuitar: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 2,
+    minHeight: AREA_TACTIL_MIN,
+    justifyContent: 'center',
+    borderRadius: RADIOS.xs,
     borderWidth: 1,
     borderColor: colores.hairlineFuerte,
     backgroundColor: 'transparent',
@@ -625,10 +720,10 @@ const estilosTienda = StyleSheet.create({
   barraIconoActivo: { opacity: 1 },
   barraTexto: {
     color: colores.textoTenue,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
   },
-  barraTextoActivo: { color: colores.oro, fontWeight: '700' },
+  barraTextoActivo: { color: colores.oroRico, fontWeight: '700' },
   barraBadge: {
     position: 'absolute',
     top: -5,
@@ -695,27 +790,25 @@ const estilosTienda = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginTop: 16,
+    marginTop: 12,
     alignSelf: 'flex-start',
-    paddingVertical: 6,
+    minHeight: AREA_TACTIL_MIN,
+    paddingVertical: 8,
+    paddingRight: 8,
   },
   volverTexto: {
     color: colores.oro,
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
   },
   tituloPantalla: {
-    fontFamily: fuentes.display,
+    ...ESCALA_TIPOGRAFICA.h2,
     color: colores.champán,
-    fontSize: 24,
-    fontWeight: '300',
-    letterSpacing: -0.3,
     marginTop: 8,
   },
   subtituloPantalla: {
+    ...ESCALA_TIPOGRAFICA.body,
     color: colores.textoSuave,
-    fontSize: 14,
-    lineHeight: 22,
     marginTop: 4,
     marginBottom: 16,
   },
@@ -770,7 +863,7 @@ const estilosTienda = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: 'rgba(183,183,183,0.5)',
+    borderColor: colores.radioBorde,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -944,7 +1037,9 @@ const estilosTienda = StyleSheet.create({
   umbralChip: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 999,
+    minHeight: AREA_TACTIL_MIN,
+    justifyContent: 'center',
+    borderRadius: RADIOS.pill,
     borderWidth: 1,
     borderColor: colores.hairline,
     backgroundColor: 'transparent',
@@ -1048,7 +1143,7 @@ const estilosTienda = StyleSheet.create({
     position: 'absolute',
     left: 16,
     right: 16,
-    bottom: 84,
+    bottom: 150,
     backgroundColor: colores.grafito2,
     borderWidth: 1,
     borderColor: colores.hairline,
@@ -1069,6 +1164,272 @@ const estilosTienda = StyleSheet.create({
     lineHeight: 19,
     textAlign: 'center',
   },
-});
 
-export default estilosTienda;
+  /* ---------- TEMA ---------- */
+  botonTema: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: AREA_TACTIL_MIN,
+    paddingHorizontal: 12,
+    borderRadius: RADIOS.sm,
+    backgroundColor: colores.grafito,
+    borderWidth: 1,
+    borderColor: colores.hairline,
+  },
+  botonTemaPresionado: {
+    backgroundColor: colores.grafito2,
+    borderColor: colores.hairlineFuerte,
+  },
+  botonTemaTexto: {
+    color: colores.oroRico,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
+  /* ---------- HERO COMPACTA ---------- */
+  heroCompacta: {
+    marginTop: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colores.hairline,
+    backgroundColor: colores.panel,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    overflow: 'hidden',
+    ...sombraSuave,
+  },
+  heroTituloCompacto: {
+    ...ESCALA_TIPOGRAFICA.h2,
+    fontSize: 24,
+    lineHeight: 30,
+    color: colores.champán,
+    fontWeight: '700',
+    letterSpacing: -0.4,
+    maxWidth: 520,
+  },
+  heroTextoCompacto: {
+    ...ESCALA_TIPOGRAFICA.body,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colores.textoSuave,
+    marginTop: 6,
+    maxWidth: 520,
+  },
+  heroAccion: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 14,
+    flexWrap: 'wrap',
+  },
+  heroBotonCompacto: {
+    backgroundColor: colores.oro,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+    borderRadius: RADIOS.sm,
+    minHeight: AREA_TACTIL_MIN,
+    justifyContent: 'center',
+  },
+  heroBotonCompactoTexto: {
+    color: colores.darkInk,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  heroNota: {
+    color: colores.textoSuave,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+
+  /* ---------- CINTA DE PROMOCIONES ---------- */
+  promosCinta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: colores.oroTinte,
+    borderWidth: 1,
+    borderColor: colores.oroBorde,
+  },
+  promosCintaTexto: {
+    color: colores.oroRico,
+    fontSize: 11,
+    fontWeight: '700',
+    flexShrink: 1,
+    textAlign: 'center',
+  },
+  promosCintaSeparador: {
+    color: colores.oroHondo,
+    fontSize: 11,
+    fontWeight: '700',
+    opacity: 0.7,
+  },
+
+  /* ---------- TARJETA: IMAGEN CON ZOOM + IA ---------- */
+  tarjetaContenido: { flex: 1, justifyContent: 'space-between' },
+  tarjetaImagenWrap: {
+    position: 'relative',
+    width: '100%',
+    overflow: 'hidden',
+  },
+  tarjetaImagenZoom: { width: '100%', height: 150 },
+  tarjetaImagenZoomAlta: { height: 200 },
+  tarjetaInfo: { flex: 1 },
+  tarjetaInfoPie: {},
+  tarjetaIA: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    marginTop: 10,
+    minHeight: AREA_TACTIL_MIN,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: RADIOS.pill,
+    borderWidth: 1,
+    borderColor: colores.oroBorde,
+    backgroundColor: colores.oroTinte,
+  },
+  tarjetaIAPresionado: { backgroundColor: colores.oroActivo },
+  tarjetaIATexto: {
+    color: colores.oroRico,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
+  /* ---------- BOTÓN FLOTANTE IA ---------- */
+  fab: {
+    position: 'absolute',
+    right: 16,
+    bottom: 84,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: colores.oro,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colores.oroBorde,
+    ...sombraSuave,
+  },
+  fabPresionado: { backgroundColor: colores.oroSuave },
+  fabIcono: { fontSize: 22, lineHeight: 26 },
+  fabTexto: {
+    color: colores.darkInk,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+
+  /* ---------- MODAL DE PRODUCTO ---------- */
+  modalFondo: {
+    flex: 1,
+    backgroundColor: 'rgba(12,10,8,0.72)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  modalHoja: {
+    width: '100%',
+    maxWidth: 640,
+    maxHeight: '92%',
+    backgroundColor: colores.panel,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colores.hairline,
+    overflow: 'hidden',
+    ...sombraSuave,
+  },
+  modalCabecera: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colores.hairline,
+  },
+  modalEtiqueta: {
+    color: colores.oro,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  modalCerrar: {
+    minWidth: AREA_TACTIL_MIN,
+    minHeight: AREA_TACTIL_MIN,
+    borderRadius: AREA_TACTIL_MIN / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colores.grafito,
+    borderWidth: 1,
+    borderColor: colores.hairline,
+  },
+  modalCerrarTexto: { color: colores.champán, fontSize: 16, fontWeight: '700' },
+  modalScroll: { paddingHorizontal: 16, paddingBottom: 20 },
+  modalImagenWrap: {
+    position: 'relative',
+    width: '100%',
+    height: 280,
+    borderRadius: 4,
+    overflow: 'hidden',
+    backgroundColor: colores.grafito,
+    marginTop: 14,
+  },
+  modalImagen: { width: '100%', height: '100%' },
+  modalNombre: {
+    color: colores.champán,
+    fontSize: 22,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+    marginTop: 12,
+  },
+  modalPrecio: {
+    color: colores.oro,
+    fontSize: 24,
+    fontWeight: '700',
+    marginTop: 4,
+    letterSpacing: -0.4,
+  },
+  modalDescripcion: {
+    color: colores.textoSuave,
+    fontSize: 14,
+    lineHeight: 22,
+    marginTop: 8,
+  },
+  modalStock: {
+    color: colores.textoTenue,
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 6,
+  },
+  modalAcciones: { gap: 8, marginTop: 16 },
+  modalBotonIA: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    minHeight: 48,
+    borderRadius: 2,
+    borderWidth: 1,
+    borderColor: colores.oroBorde,
+    backgroundColor: colores.oroTinte,
+  },
+  modalBotonIAPresionado: { backgroundColor: colores.oroActivo },
+  modalBotonIATexto: {
+    color: colores.oroRico,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  });
+
+  return { colores, estilos };
+}

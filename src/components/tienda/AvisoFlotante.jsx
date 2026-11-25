@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Text } from 'react-native';
 
-import estilos from '../../estilosTienda';
+import { useTema } from '../../theme/TemaContexto';
 
 /* =========================================================
    AVISO FLOTANTE (no bloqueante)
@@ -11,6 +11,7 @@ import estilos from '../../estilosTienda';
 ========================================================= */
 
 export default function AvisoFlotante({ aviso }) {
+  const { estilos } = useTema();
   const opacidad = useRef(new Animated.Value(0)).current;
   const desplazamiento = useRef(new Animated.Value(12)).current;
 

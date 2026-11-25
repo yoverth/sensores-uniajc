@@ -10,7 +10,6 @@ import {
   View,
 } from 'react-native';
 
-import estilos, { colores } from '../../estilosTienda';
 import ResumenPrecios from '../../components/tienda/ResumenPrecios';
 import {
   calcularResumen,
@@ -19,6 +18,7 @@ import {
 } from '../../logic/carrito';
 import { formatearCOP } from '../../logic/formato';
 import { promocionVigente } from '../../logic/promociones';
+import { useTema } from '../../theme/TemaContexto';
 
 /* =========================================================
    PROCESO DE COMPRA
@@ -54,6 +54,7 @@ export default function PantallaCheckout({
   onConfirmar,
   onVolverCarrito,
 }) {
+  const { estilos, colores } = useTema();
   const [tipoEntrega, setTipoEntrega] = useState('recoger');
   const [nombre, setNombre] = useState('');
   const [telefono, setTelefono] = useState('');

@@ -1,12 +1,12 @@
 import React from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 
-import estilos from '../../estilosTienda';
 import ResumenPrecios from '../../components/tienda/ResumenPrecios';
 import SelectorCantidad from '../../components/tienda/SelectorCantidad';
 import { calcularResumen } from '../../logic/carrito';
 import { formatearCOP } from '../../logic/formato';
 import { minutosRestantes, promocionVigente } from '../../logic/promociones';
+import { useTema } from '../../theme/TemaContexto';
 
 /* =========================================================
    CARRITO
@@ -25,6 +25,7 @@ export default function PantallaCarrito({
   onIrCheckout,
   onIrTienda,
 }) {
+  const { estilos } = useTema();
   const resumen = calcularResumen(carrito, promocion, 'recoger');
   const vacio = carrito.length === 0;
 

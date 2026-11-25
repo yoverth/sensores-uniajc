@@ -1,9 +1,10 @@
 import React from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
-import estilos from '../../estilosTienda';
 import ResumenPrecios from '../../components/tienda/ResumenPrecios';
+import LogoMarca from '../../components/tienda/LogoMarca';
 import { formatearCOP, formatearFecha } from '../../logic/formato';
+import { useTema } from '../../theme/TemaContexto';
 
 /* =========================================================
    CONFIRMACIÓN DEL PEDIDO
@@ -25,6 +26,8 @@ export default function PantallaConfirmacion({
   onSeguirComprando,
   onVerPedidos,
 }) {
+  const { estilos } = useTema();
+
   if (!pedido) {
     return (
       <ScrollView contentContainerStyle={estilos.contenido}>
@@ -59,7 +62,11 @@ export default function PantallaConfirmacion({
 
   return (
     <ScrollView contentContainerStyle={estilos.contenido}>
-      <View style={estilos.exitoCirculo}>
+      <View style={{ alignItems: 'center', marginTop: 16 }}>
+        <LogoMarca tamano={64} mostrarTexto={false} />
+      </View>
+
+      <View style={[estilos.exitoCirculo, { marginTop: 12 }]}>
         <Text style={estilos.exitoIcono}>✓</Text>
       </View>
 

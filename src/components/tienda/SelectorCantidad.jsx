@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import estilos from '../../estilosTienda';
+import { useTema } from '../../theme/TemaContexto';
 
 /* =========================================================
    SELECTOR DE CANTIDAD (+ / -)
@@ -15,6 +15,7 @@ export default function SelectorCantidad({
   onMas,
   etiqueta,
 }) {
+  const { estilos } = useTema();
   const puedeMenos = cantidad > 1;
   const puedeMas = cantidad < stock;
 

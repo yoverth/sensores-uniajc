@@ -1,0 +1,25 @@
+{
+  "short_name": "La T",
+  "name": "La Pastelería La T",
+  "description": "Repostería artesanal y café — catálogo, pedidos y promociones.",
+  "icons": [
+    {
+      "src": "/logo-la-t.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-la-t.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    }
+  ],
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#6B3A1E",
+  "background_color": "#FDF4D8",
+  "lang": "es"
+}

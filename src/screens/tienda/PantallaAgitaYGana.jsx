@@ -1,8 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, ScrollView, Text, View } from 'react-native';
+import {
+  Animated,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 
-import estilos from '../../estilosTienda';
 import useAgitar from '../../hooks/useAgitar';
+import LogoMarca from '../../components/tienda/LogoMarca';
 import {
   ENFRIAMIENTO_MS,
   ESPERA_ENTRE_INTENTOS_S,
@@ -18,6 +25,8 @@ import {
   premioParaSacudida,
   promocionVigente,
 } from '../../logic/promociones';
+import { useTema } from '../../theme/TemaContexto';
+import { EVENTOS_ANALITICA, registrarEvento } from '../../services/analitica';
 
 /* =========================================================
    AGITA Y GANA
@@ -35,7 +44,9 @@ export default function PantallaAgitaYGana({
   onGanarPromocion,
   onIrCarrito,
   onIrTienda,
+  pausado = false,
 }) {
+  const { estilos } = useTema();
   const [umbral, setUmbral] = useState(UMBRAL_DEFECTO);
   const [premio, setPremio] = useState(null);
   const [espera, setEspera] = useState(0);
@@ -54,12 +65,26 @@ export default function PantallaAgitaYGana({
       onSacudida: manejarSacudida,
     });
 
+  /* Al abrir el Asistente IA sobre el juego (o al navegar fuera, que
+     desmonta la pantalla), la suscripción del acelerómetro se corta
+     de inmediato para no dejar el sensor escuchando en segundo plano. */
+  useEffect(() => {
+    if (pausado && activo) detener();
+  }, [pausado, activo, detener]);
+
   function manejarSacudida(resultado) {
     detener();
     setPico(resultado.pico);
     setEspera(ESPERA_ENTRE_INTENTOS_S);
 
     const porcentaje = premioParaSacudida(resultado.pico, umbral);
+
+    registrarEvento(EVENTOS_ANALITICA.AGITA_Y_GANA, {
+      exito: Boolean(porcentaje),
+      porcentaje: porcentaje || 0,
+      pico: Number((resultado.pico || 0).toFixed(2)),
+      umbral,
+    });
 
     if (!porcentaje) {
       setAviso({
@@ -208,11 +233,27 @@ export default function PantallaAgitaYGana({
 
   return (
     <ScrollView contentContainerStyle={estilos.contenido}>
-      <Text style={estilos.tituloPantalla}>Agita y gana</Text>
-      <Text style={estilos.subtituloPantalla}>
-        Mueve el teléfono de verdad: el acelerómetro mide tu sacudida y
-        desbloquea un descuento.
-      </Text>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 12,
+          marginTop: 8,
+          marginBottom: 16,
+        }}
+      >
+        <LogoMarca tamano={48} mostrarTexto={false} />
+
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={[estilos.tituloPantalla, { marginTop: 0 }]}>
+            Agita y gana
+          </Text>
+          <Text style={[estilos.subtituloPantalla, { marginBottom: 0 }]}>
+            Mueve el teléfono de verdad: el acelerómetro mide tu sacudida y
+            desbloquea un descuento.
+          </Text>
+        </View>
+      </View>
 
       {bloqueado && cuponGuardado && !premio && (
         <View style={[estilos.avisoInline, estilos.avisoExito]}>
@@ -378,6 +419,28 @@ export default function PantallaAgitaYGana({
           </Text>
         </Animated.View>
       </Pressable>
+
+      {Platform.OS === 'web' && !premio && (
+        <Pressable
+          onPress={() => {
+            if (bloqueado || espera > 0) return;
+            manejarSacudida({ pico: umbral + 1 });
+          }}
+          disabled={bloqueado || espera > 0}
+          accessibilityRole="button"
+          accessibilityLabel="Simular una sacudida en el navegador"
+          accessibilityState={{ disabled: bloqueado || espera > 0 }}
+          style={({ pressed }) => [
+            estilos.botonClaro,
+            (bloqueado || espera > 0) && estilos.botonDeshabilitado,
+            pressed && estilos.botonClaroPresionado,
+          ]}
+        >
+          <Text style={estilos.botonClaroTexto}>
+            🧪 Simular sacudida (solo web)
+          </Text>
+        </Pressable>
+      )}
 
       {premio && (
         <>

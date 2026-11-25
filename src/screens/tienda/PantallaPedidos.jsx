@@ -1,8 +1,8 @@
 import React from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
-import estilos from '../../estilosTienda';
 import { formatearCOP, formatearFecha } from '../../logic/formato';
+import { useTema } from '../../theme/TemaContexto';
 
 /* =========================================================
    PEDIDOS REGISTRADOS (demostración local)
@@ -14,6 +14,8 @@ const ENTREGAS = {
 };
 
 export default function PantallaPedidos({ pedidos, onIrTienda }) {
+  const { estilos } = useTema();
+
   return (
     <ScrollView contentContainerStyle={estilos.contenido}>
       <Text style={estilos.tituloPantalla}>Mis pedidos</Text>

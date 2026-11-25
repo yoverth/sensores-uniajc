@@ -1,264 +1,153 @@
-# Pastelería La T 🍰
+# La Pastelería La T 🍰
 
-Tienda móvil de pastelería hecha con **Expo + React Native** (Android, iOS y web).
-Incluye catálogo, carrito, checkout y el juego **«Agita y gana»**, que usa el
-**acelerómetro real** del teléfono para desbloquear descuentos. Incorpora
-además un **Asistente IA local** (pestaña 🤖) para consultar precio, nombre y
-descripción de los productos sin depender de internet.
-
-El antiguo laboratorio académico de sensores y rendimiento se conserva, pero ya
-no es la pantalla inicial: vive dentro de **Herramientas internas**.
+Aplicación móvil y web (**Expo + React Native + React Native Web / PWA**) para **La Pastelería La T**. Incluye catálogo comercial de **14 productos reales**, portada panorámica con carrusel de destacados, buscador con filtros avanzados, visor de producto con zoom libre (`1x–4x`), carrito de compras, checkout, historial de pedidos locales, el juego **«Agita y gana»** con acelerómetro real, un **Asistente IA local** (clasificador `1-NN`), sistema de temas **Claro / Oscuro** accesible (WCAG AA) y módulo legal con consentimiento de cookies.
 
 ---
 
-## 1. Qué incluye
+## 1. Funcionalidades principales
 
-### Tienda (pantalla inicial)
-- Portada con marca «La T», buscador, categorías y promociones.
-- Catálogo de **14 productos reales** de pastelería (tortas, cheesecakes,
-  cupcakes, brownies, galletas, postres y bebidas) con precio en COP,
-  descripción, imagen y disponibilidad.
-- Cada tarjeta tiene **Agregar al carrito** y **Comprar ahora**.
-- Los 120 productos de demostración del laboratorio **no** aparecen en las
-  tarjetas de la tienda, pero sí están cubiertos por el Asistente IA.
+### Identidad, arranque y PWA
+- **Splash animado ([`PantallaSplash.jsx`](src/components/tienda/PantallaSplash.jsx)):** construido exclusivamente con `Animated` nativo de React Native mostrando el logotipo oficial (`assets/logo-la-t.png`, paleta crema `#FDF4D8` y café `#6B3A1E`) sin interfaz intermedia antes de abrir la tienda.
+- **Emblema de marca ([`LogoMarca.jsx`](src/components/tienda/LogoMarca.jsx)):** logotipo circular reutilizable en splash, encabezado, portada, asistente y pie de página.
+- **Configuración nativa y PWA ([`app.json`](app.json), [`public/manifest.json`](public/manifest.json), [`public/index.html`](public/index.html)):** íconos, favicon y metadatos configurados con `logo-la-t.png` para Expo Go (Android / iOS) y Web instalable.
 
-### Asistente IA (pestaña 🤖 de la tienda)
-- Clasificador didáctico **1-NN** (vecino más cercano) que funciona **100 %
-  local**: no usa APIs de inteligencia artificial ni envía información a
-  internet.
-- Cubre **todos los productos**: los 14 comerciales del catálogo real más los
-  120 de demostración del laboratorio (**134 en total**), combinados en
-  `App.js` sin duplicar listas.
-- Reconoce tres intenciones sobre el producto activo: **precio**, **nombre** y
-  **descripción**.
-- Normaliza el texto (minúsculas, sin tildes, sin puntuación y sin palabras
-  vacías) y compara la consulta con ejemplos de entrenamiento mediante
-  **similitud de coseno**.
-- Umbral de confianza de **0.35** y margen de **0.10** sobre la segunda
-  intención: si la pregunta es ambigua o está fuera de contexto, el asistente
-  explica por qué no respondió en lugar de responder mal.
-- **Opciones manuales ante la duda:** cuando la pregunta es ambigua (ej.
-  «dime el nombre y el precio») o no reconoce la intención, se muestran tres
-  botones — 🏷️ **Ver Nombre**, 💲 **Ver Precio** y 📋 **Ver Descripción** —
-  que entregan el dato verificado del producto activo con un toque.
-- Muestra el producto activo (imagen, nombre, categoría, precio y descripción),
-  la respuesta, el porcentaje de confianza y un historial reciente.
-- Se adapta a móvil (1 columna) y a tablet/web (dos paneles), y también vive
-  como pestaña dentro de **Herramientas internas**.
+### Tienda, portada y buscador con filtros
+- **Portada panorámica ([`BannerPortada.jsx`](src/components/tienda/BannerPortada.jsx)):** tarjeta de dos zonas (adaptable a celular, tablet y escritorio) con accesos a «Agita y gana» y carrusel horizontal deslizable cada 4 s con productos destacados de [`catalogo.js`](src/data/catalogo.js).
+- **Catálogo de 14 productos ([`catalogo.js`](src/data/catalogo.js)):** tortas, cheesecakes, cupcakes, brownies, galletas, postres y bebidas con precios en pesos colombianos (COP), existencias y etiquetas.
+- **Buscador con filtro avanzado ([`PantallaTienda.jsx`](src/screens/tienda/PantallaTienda.jsx)):**
+  - Búsqueda de texto normalizada sin tildes y multipalabra (`normalizarTexto`) sobre nombre, descripción, categoría y etiqueta.
+  - Panel desplegable de **Filtros**: rango de precio (*Cualquier precio*, *Hasta $10.000*, *$10.000 – $55.000*, *Más de $55.000*), ordenamiento (*Destacados*, *Menor precio*, *Mayor precio*, *Nombre A–Z*), *Solo disponibles* y *Destacados / Nuevos*.
+  - Chips por categoría, resumen removible de filtros activos y **skeleton loader** ([`EsqueletoCatalogo.jsx`](src/components/tienda/EsqueletoCatalogo.jsx)) durante cambios de filtro o búsqueda.
+- **Visor de producto con zoom libre ([`ModalProducto.jsx`](src/components/tienda/ModalProducto.jsx)):** acercamiento continuo de `1x` a `4x` mediante pellizco con dos dedos en móvil (`PanResponder`), rueda del ratón / trackpad en web, desplazamiento de la imagen ampliada y doble toque / doble clic para restablecer.
 
-### Carrito
-- Aumentar/disminuir cantidades (sin pasar de 1 ni del stock), eliminar ítems.
-- Precio unitario, subtotal por ítem, subtotal general, descuento y total.
-- Mensaje cuando está vacío y estado conservado al cambiar de pantalla
-  (el carrito vive en `App.js`).
+### Asistente IA local ([`AsistenteIA.jsx`](src/screens/AsistenteIA.jsx))
+- Clasificador **1-NN** (`src/logic/modeloIA.js`) **100 % local** mediante similitud de coseno (`UMBRAL_CONFIANZA = 0.35`, `UMBRAL_DIFERENCIA = 0.1`), sin envío de datos ni APIs externas.
+- Responde sobre los **14 productos** del catálogo real en tres intenciones (**precio**, **nombre** y **descripción**) e incluye desambiguación manual (`Ver Nombre`, `Ver Precio`, `Ver Descripción`) ante preguntas ambiguas.
+- Accesible en modal desde el botón flotante ([`BotonAsistenteFlotante.jsx`](src/components/tienda/BotonAsistenteFlotante.jsx)) o desde cualquier tarjeta/detalle de producto.
 
-### Checkout
-- Resumen de productos, cantidades, subtotal, descuento y total.
-- **Recoger en tienda** (sin costo) o **domicilio** ($6.000, gratis desde
-  $80.000 sobre el valor después del descuento).
-- Datos del cliente con validación en pantalla (sin `Alert` bloqueante).
-- Métodos de pago implementados en el flujo local:
-  - Efectivo contra entrega.
-  - Transferencia bancaria (coordinación manual).
-  - Tarjeta en línea: visible pero **deshabilitada** (no se simula el pago).
-- Confirmación con identificador de pedido (`LT-AAAAMMDD-0001`) y listado en
-  **Pedidos**.
+### Carrito, Checkout y Pedidos
+- **Carrito ([`PantallaCarrito.jsx`](src/screens/tienda/PantallaCarrito.jsx)):** ajuste de cantidades dentro del stock, eliminación de productos, cálculo de subtotales/descuentos y opción de retirar o restaurar el cupón mientras siga vigente.
+- **Checkout y confirmación ([`PantallaCheckout.jsx`](src/screens/tienda/PantallaCheckout.jsx), [`PantallaConfirmacion.jsx`](src/screens/tienda/PantallaConfirmacion.jsx)):** recogida en tienda (sin costo) o domicilio (`$6.000`, gratis desde `$80.000`), validación en pantalla, generación de identificador `LT-DDMM-0001` en [`pedidos.js`](src/services/pedidos.js) y registro en **Pedidos** ([`PantallaPedidos.jsx`](src/screens/tienda/PantallaPedidos.jsx)).
+  > **Nota:** Los pedidos se registran de forma local en la sesión actual; `src/services/pedidos.js` deja preparada la estructura para conectar un backend real.
 
-> **Demostración local:** los pedidos se guardan solo en memoria de la sesión.
-> No se envían a la tienda ni se procesa ningún pago real. `src/services/pedidos.js`
-> ya tiene la forma de una llamada a API para conectar un backend después.
+### Juego «Agita y gana» ([`PantallaAgitaYGana.jsx`](src/screens/tienda/PantallaAgitaYGana.jsx))
+- Usa el acelerómetro real mediante `Accelerometer` de `expo-sensors` en Android/iOS y `devicemotion` en navegadores web ([`useAgitar.js`](src/hooks/useAgitar.js), [`sacudida.js`](src/logic/sacudida.js)).
+- Umbrales configurables en [`promociones.js`](src/data/promociones.js): *Suave* (`1.8 g`), *Normal* (`2.2 g`), *Fuerte* (`2.8 g`), enfriamiento de `2500 ms` y espera de `8 s` entre intentos.
+- Premios no acumulables de **5 %** (sin mínimo), **10 %** (desde `$40.000`) y **15 %** (desde `$80.000`), con vigencia de `15` minutos, bloqueo de nuevos giros mientras el cupón siga activo y limpieza automática de la suscripción del sensor al salir o pausar.
 
-### Agita y gana
-- Usa `Accelerometer` de `expo-sensors` en Android/iOS y el evento
-  `devicemotion` del navegador en web (el acelerómetro de `expo-sensors` en web
-  entrega orientación, no aceleración).
-- Detecta sacudidas con lecturas reales: umbral configurable (Suave 1.8 g,
-  Normal 2.2 g, Fuerte 2.8 g), 2 muestras consecutivas por encima del umbral y
-  enfriamiento de 2,5 s para ignorar vibraciones pequeñas.
-- Premios: **5%** sin mínimo, **10%** desde $40.000 y **15%** desde $80.000.
-  Cuanto más fuerte la sacudida, mejor probabilidad dentro de la regla alcanzada.
-- Vigencia de 15 minutos, **1 uso**, **no acumulables**: un cupón nuevo
-  reemplaza al anterior.
-- Espera de 8 segundos entre intentos, con cuenta regresiva visible.
-- Maneja permisos, errores y dispositivos sin sensor.
-- El cupón se guarda al ganarlo: si el carrito aún no llega al mínimo queda
-  **pendiente** y se activa solo al alcanzarlo. El total se recalcula siempre.
-
-### Herramientas internas → Laboratorio
-Accesible desde el botón 🧪 del encabezado (y con «← Volver a la tienda»):
-- **Original:** `ScrollView` con los 120 ítems.
-- **Optimizada:** `FlatList` virtualizada.
-- **Adaptativa:** 1 columna por debajo de 600 px, 2 entre 600 y 899 px, 3 desde
-  900 px.
-- **Sensores:** ejes X/Y/Z del acelerómetro, nivelación y captura con cámara.
-- **Tareas:** sesión 9 (registro y validación adaptativa).
-- **Asistente IA:** el mismo clasificador local de la tienda, como pestaña del
-  laboratorio.
+### Sistema de diseño, accesibilidad, legal y analítica
+- **Temas Claro / Oscuro y WCAG AA ([`tokens.js`](src/theme/tokens.js), [`TemaContexto.jsx`](src/theme/TemaContexto.jsx), [`estilosTienda.js`](src/estilosTienda.js)):** escala tipográfica, espaciados, sombras, contraste `>= 4.5:1` y áreas táctiles mínimas de `44 px` (`AREA_TACTIL_MIN`).
+- **Módulo legal y cookies ([`ModalLegal.jsx`](src/components/tienda/ModalLegal.jsx), [`BannerCookies.jsx`](src/components/tienda/BannerCookies.jsx), [`FooterTienda.jsx`](src/components/tienda/FooterTienda.jsx)):** Política de Privacidad, Términos y Condiciones, Política de Cookies, Política de Reembolso y Devoluciones, configuración granular de consentimiento (`localStorage` en web / memoria en nativo) y enlaces sociales oficiales.
+- **Analítica local ([`analitica.js`](src/services/analitica.js)):** registra eventos de navegación, búsquedas, filtros, zoom, carrito, «Agita y gana», consultas IA y pedidos **únicamente** cuando el usuario autoriza cookies analíticas.
 
 ---
 
-## 2. Instalación
+## 2. Requisitos e instalación
 
-Requisitos: Node.js 20+ y la app **Expo Go** en el teléfono (o un emulador).
+Requisitos: **Node.js 20+** y **Expo Go** en Android/iOS (o navegador web).
 
 ```bash
 npm install
 ```
 
-Dependencias principales (ya en `package.json`):
+Dependencias principales (`package.json`):
 
 ```json
-"expo": "^58.0.0",
+"expo": "~58.0.26",
+"react": "19.3.0",
+"react-dom": "19.3.0",
 "react-native": "0.88.1",
-"expo-sensors": "~58.0.4",
+"react-native-web": "^0.21.2",
+"expo-sensors": "~58.0.5",
 "expo-camera": "~58.0.14",
-"expo-media-library": "~58.0.13"
-```
-
-No hace falta añadir nada más para la tienda ni para el acelerómetro.
-
-## 3. Ejecutar
-
-```bash
-npx expo start          # QR para Expo Go
-npx expo start --android
-npx expo start --ios
-npx expo start --web
-```
-
-Si el sensor o la cámara no cargan en Expo Go después de cambiar dependencias:
-
-```bash
-npx expo install --fix
-npx expo-doctor
+"expo-media-library": "~58.0.14",
+"expo-screen-orientation": "~58.0.4",
+"expo-status-bar": "~58.0.5"
 ```
 
 ---
 
-## 4. Cómo probar
+## 3. Ejecución y exportación
 
-### Carrito
-1. En **Inicio**, toca **Agregar al carrito** en dos productos distintos.
-2. Abre 🛍️ (arriba o en la barra inferior): verifica precio unitario, subtotal
-   por ítem y subtotal general.
-3. Usa **+ / −** y 🗑️: los totales se recalculan al instante.
-4. Cambia a **Buscar** o **Pedidos** y vuelve: el carrito se conserva.
-5. Vacíalo del todo para ver el mensaje de carrito vacío.
+```bash
+npx expo start -c        # Inicia Metro limpiando caché (QR para Expo Go)
+npx expo start --android # Abre en emulador o dispositivo Android
+npx expo start --ios     # Abre en simulador iOS
+npx expo start --web     # Inicia la versión web / PWA
+```
 
-### Comprar ahora
-Toca **Comprar ahora** en una tarjeta: el producto se agrega y te lleva
-directo al carrito.
+Para exportar compilaciones estáticas:
 
-### Checkout y pedido
-1. **Continuar con el pedido** con el carrito lleno.
-2. Elige **Recoger en tienda** (no aparece fila de envío) y luego **Domicilio**
-   (aparece envío de $6.000; gratis desde $80.000 después del descuento).
-3. Intenta confirmar sin datos: verás el aviso en pantalla junto al campo.
-4. Completa nombre y teléfono (y dirección si es domicilio), elige el pago y
-   confirma.
-5. Revisa el **identificador** en la confirmación y el pedido en **Pedidos**.
-   El carrito queda vacío.
-
-### Agita y gana
-1. Entra por 🎁 (barra inferior) o desde el carrito.
-2. Toca **Comenzar** y acepta el permiso de movimiento.
-3. Agita el teléfono con energía: la barra y el pico en g suben.
-4. Al superar el umbral aparece el cupón; el botón **Usar X% en mi carrito**
-   te lleva al carrito con el descuento ya aplicado (o pendiente si no llegas
-   al mínimo).
-5. Intenta de nuevo: hay una espera de 8 s. Si ganas otro cupón, reemplaza al
-   anterior (no se acumulan).
-6. **En el navegador** el sensor solo funciona en equipos con acelerómetro y
-   contexto seguro (`https` o `localhost`); en escritorio sin sensor verás el
-   aviso de permiso/disponibilidad. La experiencia completa es en el teléfono.
-
-### Asistente IA
-1. Toca 🤖 **Asistente** en la barra inferior de la tienda (o entra por el
-   laboratorio y selecciona la pestaña **Asistente IA**).
-2. Escribe «¿Cuánto cuesta este producto?» y toca **Consultar**: verás el precio
-   en COP junto a la confianza del clasificador.
-3. Prueba también «¿Cómo se llama este artículo?» y «¿Qué características
-   tiene?».
-4. Escribe una pregunta vacía o sin relación con el catálogo (ej. «¿Cuál es el
-   clima?»): aparece el mensaje de validación en lugar de una respuesta
-   incorrecta.
-5. Escribe una pregunta ambigua como «dime el nombre y el precio»: el asistente
-   avisa que no quiere adivinar y despliega los botones 🏷️ **Ver Nombre**,
-   💲 **Ver Precio** y 📋 **Ver Descripción**; toca uno y obtienes el dato
-   verificado del producto activo.
-6. Usa **Siguiente producto** para recorrer los 134 productos de forma cíclica
-   (los primeros 14 son los reales y siguen los de demostración) y observa
-   cómo cambia la respuesta.
-7. Vuelve con **← Volver al catálogo** o con 🏠 **Inicio**; el catálogo que
-   consulta une `PRODUCTOS` de `src/data/catalogo.js` con `productos` de
-   `src/data/productos.js` en `App.js`.
-
-### Laboratorio
-1. Toca 🧪 **Herramientas internas**.
-2. Recorre **Original**, **Optimizada** y **Adaptativa** (cambia el ancho de la
-   ventana para ver 1, 2 o 3 columnas).
-3. **Sensores**: mueve el teléfono y observa X/Y/Z; usa **Nivelar** y la captura
-   con cámara.
-4. **Tareas**: agrega, completa y elimina tareas.
-5. Vuelve con **← Volver a la tienda**.
+```bash
+npx expo export -p web -c
+npx expo export -p android -c
+```
 
 ---
 
-## 5. Estructura
+## 4. Estructura del proyecto
 
-```
-App.js                        orquesta tienda/laboratorio, carrito, cupón y pedidos
-index.js                      registro de la app (registerRootComponent)
-src/  data/
-    catalogo.js               14 productos, categorías y filtros
-    promociones.js            reglas, umbrales, vigencia y esperas
-  logic/
-    carrito.js                agregar, cantidades, resumen y envío
-    formato.js                precios en COP
-    modelIA.js                clasificador 1-NN y similitud de coseno
-    promociones.js            vigencia, mínimos y premio por sacudida
-    sacudida.js               detección pura de sacudidas
+```text
+App.js                                 Orquestación general, splash, vistas, carrito, cupones y modales
+app.json                               Configuración de Expo, íconos, splash y PWA
+index.js                               Punto de entrada (registerRootComponent)
+assets/
+  logo-la-t.png                        Logotipo oficial de La Pastelería La T
+  productos/                           Fotografías del catálogo y CREDITOS.md
+public/
+  index.html                           Plantilla HTML web con enlaces PWA
+  manifest.json                        Manifiesto Web App (PWA)
+  logo-la-t.png                        Copia pública del logotipo para web/PWA
+src/
+  estilosTienda.js                     Hoja de estilos temática basada en tokens
+  data/
+    catalogo.js                        14 productos, categorías, rangos, ordenamientos y filtros puros
+    promociones.js                     Reglas, premios, vigencia y umbrales de «Agita y gana»
   hooks/
-    useAgitar.js              acelerómetro real (nativo y web)
-    useDispositivo.js         breakpoints 600/900
+    useAcelerometro.js                 Suscripción base al acelerómetro
+    useAgitar.js                       Detector de sacudidas (nativo y devicemotion en web)
+    useDispositivo.js                  Breakpoints adaptativos (600 / 900 px)
+  logic/
+    carrito.js                         Cálculo de carrito, subtotales, envíos y totales
+    formato.js                         Formato de moneda COP y fechas
+    modeloIA.js                        Clasificador local 1-NN por similitud de coseno
+    promociones.js                     Validación de vigencia y premios por sacudida
+    sacudida.js                        Lógica pura de detección de picos en g
   services/
-    pedidos.js                creación de pedido (listo para API)
-  components/tienda/          encabezado, barra, tarjeta, resumen, selector, aviso
-  screens/tienda/             tienda, carrito, checkout, confirmación, agita, pedidos
-  screens/                    pantallas del laboratorio y AsistenteIA.jsx
-  estilosTienda.js            paleta crema/rosa/chocolate
-  styles.js                   tema oscuro del laboratorio
-assets/productos/             fotografías y CREDITOS.md
+    analitica.js                       Consentimiento de cookies y registro local de eventos
+    pedidos.js                         Creación local de pedidos (LT-DDMM-0001)
+  theme/
+    tokens.js                          Tokens tipográficos, radios, sombras y paletas WCAG AA
+    TemaContexto.jsx                   Proveedor de tema Claro / Oscuro (`useTema`)
+  components/tienda/
+    AvisoFlotante.jsx                  Notificaciones breves de estado
+    BannerCookies.jsx                  Banner de consentimiento de cookies
+    BannerPortada.jsx                  Portada panorámica y carrusel de destacados
+    BarraTienda.jsx                    Barra inferior de navegación
+    BotonAsistenteFlotante.jsx         Acceso flotante al Asistente IA
+    EncabezadoTienda.jsx               Encabezado con logo, cambio de tema y carrito
+    EsqueletoCatalogo.jsx              Skeleton loader al filtrar o buscar
+    FooterTienda.jsx                   Redes sociales y enlaces legales
+    LogoMarca.jsx                      Logotipo circular reutilizable
+    ModalLegal.jsx                     Centro legal y preferencias de cookies
+    ModalProducto.jsx                  Detalle de producto con zoom táctil/web (1x–4x)
+    PantallaSplash.jsx                 Splash animado inicial
+    ResumenPrecios.jsx                 Desglose de subtotal, descuento, envío y total
+    SelectorCantidad.jsx               Controles + / − de unidades
+    TarjetaProducto.jsx                Tarjeta de producto del catálogo
+  screens/
+    AsistenteIA.jsx                    Asistente IA local sobre el catálogo
+    tienda/
+      PantallaTienda.jsx               Catálogo, buscador, filtros avanzados y portada
+      PantallaCarrito.jsx              Gestión del carrito y cupones
+      PantallaCheckout.jsx             Formulario de entrega y método de pago
+      PantallaConfirmacion.jsx         Comprobante local de pedido confirmado
+      PantallaAgitaYGana.jsx           Juego con acelerómetro y vigencias
+      PantallaPedidos.jsx              Historial de pedidos de la sesión
 ```
-
-### Cambiar precios o productos
-Edita `src/data/catalogo.js`: cada producto tiene `id`, `nombre`, `descripcion`,
-`categoria`, `precio` (COP), `imagen`, `disponible` y `stock`.
-
-### Cambiar reglas de «Agita y gana»
-Edita `src/data/promociones.js` (premios, mínimos, vigencia, espera) y los
-umbrales de fuerza. La detección física está en `src/logic/sacudida.js`.
-
-### Cambiar el Asistente IA
-- Los ejemplos de entrenamiento (`EJEMPLOS_ENTRENAMIENTO`), las palabras
-  vacías (`PALABRAS_VACIAS`) y los umbrales (`UMBRAL_CONFIANZA` y
-  `UMBRAL_DIFERENCIA`) viven en `src/logic/modeloIA.js`; no requieren
-  conexión ni dependencias externas.
-- El asistente **no duplica el catálogo**: `App.js` combina `PRODUCTOS`
-  (comerciales) y `productos` (demostración) en `PRODUCTOS_ASISTENTE` y se los
-  pasa por props, por lo que se actualiza solo si cambian los productos.
-- Las opciones manuales (🏷️ Ver Nombre, 💲 Ver Precio, 📋 Ver Descripción) se
-  muestran cuando `clasificarIntencion` devuelve un resultado inválido
-  (ambiguo o fuera de contexto); el listado `OPCIONES_MANUALES` y los mensajes
-  están en `src/screens/AsistenteIA.jsx`.
-- La interfaz y los mensajes de respuesta están en
-  `src/screens/AsistenteIA.jsx` (usado por la pestaña 🤖 de la tienda y por la
-  pestaña del laboratorio).
 
 ---
 
-## 6. Créditos de imágenes
+## 5. Créditos de imágenes
 
-Las fotografías de los productos provienen de Wikimedia Commons y están
-documentadas, con su licencia y autoría, en
-[`assets/productos/CREDITOS.md`](assets/productos/CREDITOS.md).
+Las fotografías de los productos provienen de Wikimedia Commons y están documentadas, con su licencia y autoría, en [`assets/productos/CREDITOS.md`](assets/productos/CREDITOS.md).

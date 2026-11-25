@@ -1,10 +1,12 @@
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import estilos from '../../estilosTienda';
+import { useTema } from '../../theme/TemaContexto';
 
 /* =========================================================
    BARRA DE NAVEGACIÓN DE LA TIENDA
+   El Asistente IA vive en un botón flotante y en cada producto,
+   así que la barra queda con cinco destinos cómodos.
 ========================================================= */
 
 const ITEMS = [
@@ -13,15 +15,11 @@ const ITEMS = [
   { id: 'agita', icono: '🎁', texto: 'Agita' },
   { id: 'carrito', icono: '🛍️', texto: 'Carrito', muestraBadge: true },
   { id: 'pedidos', icono: '🧾', texto: 'Pedidos' },
-  {
-    id: 'asistente',
-    icono: '🤖',
-    texto: 'Asistente',
-    etiquetaAccesible: 'Asistente IA',
-  },
 ];
 
 export default function BarraTienda({ vista, onNavegar, cantidadCarrito }) {
+  const { estilos } = useTema();
+
   /* El checkout y la confirmación pertenecen al flujo del carrito. */
   const activa =
     vista === 'checkout' || vista === 'confirmacion' ? 'carrito' : vista;
@@ -37,6 +35,7 @@ export default function BarraTienda({ vista, onNavegar, cantidadCarrito }) {
             onPress={() => onNavegar(item.id)}
             accessibilityRole="tab"
             accessibilityLabel={item.etiquetaAccesible || item.texto}
+            accessibilityHint={`Ir a la sección ${item.texto}`}
             accessibilityState={{ selected: seleccionada }}
             hitSlop={{ top: 4, bottom: 4, left: 0, right: 0 }}
             style={({ pressed }) => [

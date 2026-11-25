@@ -1,53 +1,49 @@
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import estilos from '../../estilosTienda';
+import { useTema } from '../../theme/TemaContexto';
+import LogoMarca from './LogoMarca';
 
 /* =========================================================
    ENCABEZADO DE LA TIENDA
-   Logo, nombre del negocio, acceso al carrito y a las
-   herramientas internas.
+   Logo, nombre del negocio, cambio de tema y carrito.
 ========================================================= */
 
 export default function EncabezadoTienda({
   cantidadCarrito,
   onAbrirCarrito,
-  onAbrirLaboratorio,
 }) {
+  const { modo, estilos, alternarTema } = useTema();
+
   const resumenCarrito = `${cantidadCarrito} ${
     cantidadCarrito === 1 ? 'producto' : 'productos'
   }`;
 
+  const esClaro = modo === 'claro';
+
   return (
     <View style={estilos.header}>
-      <View style={estilos.marca}>
-        <View style={estilos.logo} accessibilityElementsHidden importantForAccessibility="no">
-          <Text style={estilos.logoTexto}>La T</Text>
-        </View>
-
-        <View style={{ flex: 1 }}>
-          <Text style={estilos.marcaNombre} numberOfLines={1}>
-            Pastelería La T
-          </Text>
-          <Text style={estilos.marcaSubtitulo} numberOfLines={1}>
-            Tortas y postres artesanales
-          </Text>
-        </View>
+      <View style={[estilos.marca, { minWidth: 0 }]}>
+        <LogoMarca tamano={40} subtitulo="Repostería artesanal" />
       </View>
 
       <View style={estilos.accionesHeader}>
         <Pressable
-          onPress={onAbrirLaboratorio}
+          onPress={alternarTema}
           accessibilityRole="button"
-          accessibilityLabel="Herramientas internas"
-          accessibilityHint="Abre el laboratorio de rendimiento y sensores"
+          accessibilityLabel={
+            esClaro ? 'Cambiar al tema oscuro' : 'Cambiar al tema claro'
+          }
+          accessibilityHint="Alterna entre el modo claro y el modo oscuro"
           hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           style={({ pressed }) => [
-            estilos.iconoBoton,
-            pressed && estilos.iconoBotonPresionado,
+            estilos.botonTema,
+            pressed && estilos.botonTemaPresionado,
           ]}
         >
-          <Text style={estilos.iconoBotonTexto}>🧪</Text>
+          <Text style={estilos.botonTemaTexto}>
+            {esClaro ? '🌙 Oscuro' : '☀️ Claro'}
+          </Text>
         </Pressable>
 
         <Pressable

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, View } from 'react-native';
 
-import estilos from '../../estilosTienda';
+import { useTema } from '../../theme/TemaContexto';
 import { formatearCOP } from '../../logic/formato';
 
 /* =========================================================
@@ -10,6 +10,8 @@ import { formatearCOP } from '../../logic/formato';
 ========================================================= */
 
 function Fila({ clave, valor, estiloValor }) {
+  const { estilos } = useTema();
+
   return (
     <View style={estilos.resumenFila}>
       <Text style={estilos.resumenClave}>{clave}</Text>
@@ -23,6 +25,7 @@ export default function ResumenPrecios({
   mostrarEnvio = false,
   porcentajePromocion = 0,
 }) {
+  const { estilos } = useTema();
   const { subtotal, descuento, envio, total, promoPendiente } = resumen;
 
   return (

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -14,10 +14,6 @@ import {
   useWindowDimensions,
 } from 'react-native';
 
-import EncabezadoAdaptativo from '../components/EncabezadoAdaptativo';
-import Navegacion from '../components/Navegacion';
-import TituloSeccion from '../components/TituloSeccion';
-import Alerta from '../components/Alerta';
 import {
   ETIQUETAS_INTENCION,
   UMBRAL_CONFIANZA,
@@ -25,15 +21,17 @@ import {
   clasificarIntencion,
 } from '../logic/modeloIA';
 import { formatearCOP } from '../logic/formato';
-import estilosGlobales from '../styles';
-import { colores } from '../estilosTienda';
+import { useTema } from '../theme/TemaContexto';
+import LogoMarca from '../components/tienda/LogoMarca';
+import { EVENTOS_ANALITICA, registrarEvento } from '../services/analitica';
 
 /* =========================================================
    ASISTENTE IA · CONSULTAS SOBRE EL CATÁLOGO REAL
 
-   El listado llega por props (`productos`), de modo que el
-   asistente siempre trabaja con el catálogo vigente sin duplicar
-   datos. La intención se clasifica localmente con `modeloIA.js`.
+   Se abre en un Modal desde cualquier producto o desde el botón
+   flotante. El listado llega por props (`productos`) y el
+   producto activo puede preseleccionarse con `productoInicialId`.
+   La intención se clasifica localmente con `modeloIA.js`.
 ========================================================= */
 
 const SUGERENCIAS = [
@@ -97,14 +95,14 @@ function construirRespuesta(intencion, producto) {
 
 export default function AsistenteIA({
   productos = [],
-  pestana,
-  setPestana,
+  productoInicialId,
   onSalir,
-  embebido = false,
 }) {
+  const { colores } = useTema();
+  const estilos = useMemo(() => crearEstilosAsistente(colores), [colores]);
+
   const [pregunta, setPregunta] = useState('');
   const [respuesta, setRespuesta] = useState(null);
-  const [indice, setIndice] = useState(0);
   const [historial, setHistorial] = useState([]);
   const [entradaFoco, setEntradaFoco] = useState(false);
 
@@ -137,8 +135,30 @@ export default function AsistenteIA({
     ]).start();
   }, [respuesta, opacidadRespuesta, desplazamientoRespuesta]);
 
-  const lista = Array.isArray(productos) ? productos : [];
+  const lista = useMemo(
+    () => (Array.isArray(productos) ? productos : []),
+    [productos]
+  );
   const total = lista.length;
+
+  const indiceInicial = useMemo(() => {
+    if (!total) return 0;
+
+    const encontrado = lista.findIndex(
+      (item) => item.id === productoInicialId
+    );
+
+    return encontrado >= 0 ? encontrado : 0;
+  }, [lista, productoInicialId, total]);
+
+  const [indice, setIndice] = useState(indiceInicial);
+
+  useEffect(() => {
+    setIndice(indiceInicial);
+    setPregunta('');
+    setRespuesta(null);
+  }, [indiceInicial]);
+
   const indiceSeguro = total > 0 ? indice % total : 0;
   const producto = total > 0 ? lista[indiceSeguro] : null;
   const fuenteImagen = producto ? obtenerFuenteImagen(producto.imagen) : null;
@@ -198,8 +218,6 @@ export default function AsistenteIA({
 
       const mensaje = `${detalle} Elige un dato con las opciones de abajo o escribe otra pregunta como "¿Cuánto cuesta?" o "¿Qué características tiene?".`;
 
-      /* Evidencia del clasificador: similitudes de las dos mejores
-         intenciones y la diferencia frente al umbral de ambigüedad. */
       const porcentaje = (v) => `${Math.round(v * 100)}%`;
       const evidencia =
         ambigua && resultado.intencion && resultado.segundaIntencion
@@ -214,6 +232,14 @@ export default function AsistenteIA({
               resultado.confianza
             )} < umbral mínimo ${porcentaje(UMBRAL_CONFIANZA)}.`;
 
+      registrarEvento(EVENTOS_ANALITICA.CONSULTA_IA, {
+        productoId: producto?.id || null,
+        modo: '1-nn',
+        intencion: resultado.intencion || null,
+        valida: false,
+        motivo: resultado.motivo,
+      });
+
       setRespuesta({
         tipo: 'error',
         titulo: ambigua ? 'Pregunta ambigua' : 'Intención no reconocida',
@@ -226,6 +252,14 @@ export default function AsistenteIA({
     }
 
     const textoRespuesta = construirRespuesta(resultado.intencion, producto);
+
+    registrarEvento(EVENTOS_ANALITICA.CONSULTA_IA, {
+      productoId: producto?.id || null,
+      modo: '1-nn',
+      intencion: resultado.intencion,
+      valida: true,
+      confianza: Number(resultado.confianza.toFixed(2)),
+    });
 
     setRespuesta({
       tipo: 'exito',
@@ -262,6 +296,14 @@ export default function AsistenteIA({
     const etiqueta = ETIQUETAS_INTENCION[intencion] || 'Respuesta';
     const textoRespuesta = construirRespuesta(intencion, producto);
 
+    registrarEvento(EVENTOS_ANALITICA.CONSULTA_IA, {
+      productoId: producto.id,
+      modo: 'manual',
+      intencion,
+      valida: true,
+      confianza: 1,
+    });
+
     setRespuesta({
       tipo: 'exito',
       titulo: etiqueta,
@@ -280,7 +322,34 @@ export default function AsistenteIA({
         : estilos.respuestaNeutra;
 
   return (
-    <View style={[estilosGlobales.container, estilos.fondo]}>
+    <View style={estilos.raiz}>
+      <View style={estilos.cabecera}>
+        <LogoMarca tamano={34} mostrarTexto={false} />
+
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={estilos.cabeceraTitulo} numberOfLines={1}>
+            Asistente IA · Pastelería La T
+          </Text>
+          <Text style={estilos.cabeceraSub} numberOfLines={1}>
+            Tu guía de tortas, postres y bebidas
+          </Text>
+        </View>
+
+        <Pressable
+          onPress={onSalir}
+          accessibilityRole="button"
+          accessibilityLabel="Cerrar el asistente de IA"
+          accessibilityHint="Vuelve a la tienda"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          style={({ pressed }) => [
+            estilos.cerrar,
+            pressed && { opacity: 0.72 },
+          ]}
+        >
+          <Text style={estilos.cerrarTexto}>✕ Cerrar</Text>
+        </Pressable>
+      </View>
+
       <KeyboardAvoidingView
         style={estilos.flex}
         behavior={Platform.select({
@@ -291,73 +360,26 @@ export default function AsistenteIA({
         keyboardVerticalOffset={0}
       >
         <ScrollView
-          contentContainerStyle={[estilosGlobales.contenido, estilos.contenido]}
+          contentContainerStyle={estilos.contenido}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
         >
-          {embebido ? (
-            onSalir ? (
-              <Pressable
-                onPress={onSalir}
-                accessibilityRole="button"
-                accessibilityLabel="Volver al catálogo de la tienda"
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                style={[estilosGlobales.botonVolverTienda, estilos.volverTienda]}
-              >
-                <Text
-                  style={[
-                    estilosGlobales.botonVolverTiendaTexto,
-                    estilos.volverTiendaTexto,
-                  ]}
-                >
-                  ← Volver al catálogo
-                </Text>
-              </Pressable>
-            ) : null
-          ) : (
-            <>
-              <EncabezadoAdaptativo onSalir={onSalir} />
-              <Navegacion pestana={pestana} setPestana={setPestana} />
-            </>
-          )}
-
-          <TituloSeccion
-            titulo="Asistente IA"
-            descripcion="Pregunta por el precio, el nombre o la descripción del producto activo. Todo se procesa localmente."
-            estiloTitulo={estilos.tituloTexto}
-            estiloDescripcion={estilos.tituloDescripcion}
-          />
-
-          <View style={estilos.indicadores}>
-            <View style={estilos.indicador}>
-              <Text style={estilos.indicadorClave}>MODELO</Text>
-              <Text style={estilos.indicadorValor}>1-NN</Text>
-            </View>
-            <View style={estilos.indicador}>
-              <Text style={estilos.indicadorClave}>PROCESAMIENTO</Text>
-              <Text style={estilos.indicadorValor}>100% local</Text>
-            </View>
-            <View style={estilos.indicador}>
-              <Text style={estilos.indicadorClave}>CATÁLOGO</Text>
-              <Text style={estilos.indicadorValor}>
-                {total} {total === 1 ? 'producto' : 'productos'}
-              </Text>
-            </View>
-          </View>
+          <Text style={estilos.descripcion}>
+            Pregúntame por precios, ingredientes o recomendaciones de nuestros
+            postres.
+          </Text>
 
           {total === 0 && (
-            <Alerta
-              icono="📭"
-              titulo="Catálogo vacío"
-              descripcion="El asistente necesita al menos un producto para responder. Revisa el listado que se inyecta por props."
-            />
+            <View style={[estilos.alerta, estilos.alertaError]}>
+              <Text style={estilos.alertaTitulo}>📭 Catálogo vacío</Text>
+              <Text style={estilos.alertaTexto}>
+                El asistente necesita al menos un producto para responder.
+              </Text>
+            </View>
           )}
 
-          <View
-            style={[estilos.paneles, esAmplia && estilos.panelesAmplios]}
-          >
-            {/* ---------- PRODUCTO ACTIVO ---------- */}
+          <View style={[estilos.paneles, esAmplia && estilos.panelesAmplios]}>
             {producto && (
               <View
                 style={[estilos.panel, esAmplia && estilos.panelMitad]}
@@ -410,25 +432,9 @@ export default function AsistenteIA({
                 <Text style={estilos.productoDescripcion}>
                   {producto.descripcion || 'Sin descripción registrada.'}
                 </Text>
-
-                <Pressable
-                  onPress={siguienteProducto}
-                  accessibilityRole="button"
-                  accessibilityLabel="Ver el siguiente producto del catálogo"
-                  accessibilityHint="Avanza de forma cíclica al siguiente producto"
-                  style={({ pressed }) => [
-                    estilos.botonProducto,
-                    pressed && estilos.botonSecundarioPresionado,
-                  ]}
-                >
-                  <Text style={estilos.botonSecundarioTexto}>
-                    Siguiente producto →
-                  </Text>
-                </Pressable>
               </View>
             )}
 
-            {/* ---------- CONSULTA ---------- */}
             <View
               style={[
                 estilos.panel,
@@ -438,7 +444,7 @@ export default function AsistenteIA({
             >
               <View style={estilos.panelCabecera}>
                 <Text style={estilos.panelEtiqueta}>CONSULTA</Text>
-                <Text style={estilos.modeloBadge}>CLASIFICADOR LOCAL</Text>
+                <Text style={estilos.modeloBadge}>RESPUESTA RÁPIDA</Text>
               </View>
 
               <Text style={estilos.ayuda}>
@@ -521,7 +527,6 @@ export default function AsistenteIA({
                 )}
               </View>
 
-              {/* ---------- RESPUESTA / VALIDACIÓN ---------- */}
               <Animated.View
                 style={[
                   estilos.respuesta,
@@ -575,7 +580,6 @@ export default function AsistenteIA({
                 )}
               </Animated.View>
 
-              {/* ---------- OPCIONES MANUALES ---------- */}
               {respuesta?.muestraOpciones && producto && (
                 <View style={estilos.opciones}>
                   <Text style={estilos.opcionesTitulo}>
@@ -603,7 +607,6 @@ export default function AsistenteIA({
                 </View>
               )}
 
-              {/* ---------- HISTORIAL ---------- */}
               {historial.length > 0 && (
                 <View style={estilos.historial}>
                   <Text style={estilos.historialTitulo}>Historial reciente</Text>
@@ -636,9 +639,8 @@ export default function AsistenteIA({
           </View>
 
           <Text style={estilos.notaPie}>
-            El clasificador compara tu pregunta con ejemplos de entrenamiento
-            mediante similitud de coseno y rechaza consultas ambiguas o fuera de
-            contexto. No se envía información a internet.
+            ¿Quieres consultar otro producto? Toca «Siguiente producto» o elige
+            una de las sugerencias rápidas.
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -647,385 +649,430 @@ export default function AsistenteIA({
 }
 
 /* =========================================================
-   ESTILOS · SISTEMA NEO KINPAKU (tokens de estilosTienda)
-   Misma base visual que la tienda: laca negra, oro kinpaku
-   como acento y pátina para los estados vivos.
+   ESTILOS DEL ASISTENTE · SIGUEN EL TEMA ACTIVO
 ========================================================= */
 
-const estilos = StyleSheet.create({
-  flex: { flex: 1 },
-  fondo: { backgroundColor: colores.laca },
-  volverTienda: {
-    backgroundColor: colores.grafito,
-    borderColor: colores.hairline,
-    borderRadius: 4,
-  },
-  volverTiendaTexto: {
-    color: colores.oro,
-    fontWeight: '600',
-  },
-  tituloTexto: {
-    color: colores.champán,
-    fontSize: 22,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-  },
-  tituloDescripcion: {
-    color: colores.textoSuave,
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  contenido: {
-    width: '100%',
-    maxWidth: 1120,
-    alignSelf: 'center',
-  },
-  indicadores: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 12,
-  },
-  indicador: {
-    flexGrow: 1,
-    minWidth: 130,
-    backgroundColor: colores.panel,
-    borderWidth: 1,
-    borderColor: colores.hairline,
-    borderRadius: 4,
-    paddingVertical: 9,
-    paddingHorizontal: 12,
-  },
-  indicadorClave: {
-    color: colores.textoTenue,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  indicadorValor: {
-    color: colores.champán,
-    fontSize: 13,
-    fontWeight: '700',
-    marginTop: 3,
-  },
-  paneles: { gap: 16 },
-  panelesAmplios: { flexDirection: 'row', alignItems: 'flex-start' },
-  panelMitad: { flex: 1, minWidth: 0 },
-  panelCompleto: { width: '100%' },
-  panel: {
-    backgroundColor: colores.panel,
-    borderWidth: 1,
-    borderColor: colores.hairline,
-    borderRadius: 4,
-    padding: 16,
-  },
-  panelCabecera: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 10,
-  },
-  panelEtiqueta: {
-    color: colores.oro,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1.3,
-  },
-  contador: {
-    backgroundColor: colores.patinaTinte,
-    borderWidth: 1,
-    borderColor: colores.patinaBorde,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  contadorTexto: { color: colores.patinaTexto, fontSize: 11, fontWeight: '700' },
-  modeloBadge: {
-    color: colores.patinaTexto,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
-    backgroundColor: colores.patinaTinte,
-    borderWidth: 1,
-    borderColor: colores.patinaBorde,
-    borderRadius: 999,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    overflow: 'hidden',
-  },
-  productoImagen: {
-    width: '100%',
-    height: 175,
-    borderRadius: 4,
-    backgroundColor: colores.grafito,
-    marginBottom: 12,
-  },
-  productoImagenAmplia: { height: 215 },
-  imagenVacia: {
-    width: '100%',
-    height: 140,
-    borderRadius: 4,
-    backgroundColor: colores.grafito,
-    borderWidth: 1,
-    borderColor: colores.hairline,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  imagenVaciaIcono: { fontSize: 34 },
-  imagenVaciaTexto: { color: colores.textoTenue, fontSize: 12, marginTop: 6 },
-  productoNombre: {
-    color: colores.champán,
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: -0.2,
-  },
-  productoCategoria: {
-    color: colores.oro,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1.1,
-    marginTop: 5,
-  },
-  productoPrecio: {
-    color: colores.oro,
-    fontSize: 22,
-    fontWeight: '700',
-    marginTop: 8,
-    letterSpacing: -0.3,
-  },
-  productoDescripcion: {
-    color: colores.textoSuave,
-    fontSize: 13,
-    lineHeight: 20,
-    marginTop: 8,
-    marginBottom: 14,
-  },
-  ayuda: {
-    color: colores.textoSuave,
-    fontSize: 12,
-    lineHeight: 18,
-    marginBottom: 10,
-  },
-  entrada: {
-    width: '100%',
-    backgroundColor: colores.grafito,
-    borderWidth: 1,
-    borderColor: colores.hairline,
-    borderRadius: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    minHeight: 48,
-    color: colores.champán,
-    fontSize: 14,
-  },
-  entradaFoco: { borderColor: colores.hairlineFuerte },
-  entradaDeshabilitada: { opacity: 0.55 },
-  sugerencias: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 8,
-  },
-  sugerencia: {
-    backgroundColor: colores.grafito,
-    borderWidth: 1,
-    borderColor: colores.hairline,
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    maxWidth: '100%',
-  },
-  sugerenciaPresionado: {
-    backgroundColor: colores.grafito2,
-    borderColor: colores.hairlineFuerte,
-  },
-  sugerenciaTexto: {
-    color: colores.texto,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  botones: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 12,
-    marginBottom: 12,
-  },
-  botonPrimario: {
-    flex: 1,
-    minWidth: 140,
-    minHeight: 46,
-    borderRadius: 2,
-    backgroundColor: colores.oro,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 14,
-  },
-  botonPrimarioPresionado: { backgroundColor: colores.oroSuave },
-  botonPrimarioTexto: {
-    color: colores.darkInk,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  botonSecundario: {
-    flex: 1,
-    minWidth: 150,
-    minHeight: 46,
-    borderRadius: 2,
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: colores.hairlineFuerte,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 14,
-    marginTop: 0,
-  },
-  botonSecundarioPresionado: {
-    backgroundColor: colores.oroActivo,
-    borderColor: colores.oro,
-  },
-  botonProducto: {
-    minHeight: 46,
-    borderRadius: 2,
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: colores.hairlineFuerte,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 14,
-  },
-  botonSecundarioTexto: {
-    color: colores.oro,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  botonDeshabilitado: { opacity: 0.45 },
-  respuesta: {
-    minHeight: 112,
-    borderRadius: 4,
-    borderWidth: 1,
-    padding: 16,
-    justifyContent: 'center',
-  },
-  respuestaNeutra: {
-    backgroundColor: colores.grafito,
-    borderColor: colores.hairline,
-  },
-  respuestaExito: {
-    backgroundColor: colores.exitoTinte,
-    borderColor: colores.patinaBorde,
-  },
-  respuestaError: {
-    backgroundColor: colores.errorTinte,
-    borderColor: colores.errorBorde,
-  },
-  respuestaEtiqueta: {
-    color: colores.patinaTexto,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1.1,
-    marginBottom: 6,
-  },
-  respuestaEtiquetaError: { color: colores.errorTexto },
-  respuestaTexto: {
-    color: colores.champán,
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  respuestaTextoError: { color: colores.errorTexto },
-  confianza: {
-    color: colores.textoTenue,
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 8,
-  },
-  evidencia: {
-    fontFamily: 'monospace',
-    color: colores.patinaTexto,
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 8,
-    lineHeight: 16,
-  },
-  opciones: {
-    borderTopWidth: 1,
-    borderTopColor: colores.hairline,
-    marginTop: 12,
-    paddingTop: 12,
-  },
-  opcionesTitulo: {
-    color: colores.champán,
-    fontSize: 13,
-    fontWeight: '700',
-    marginBottom: 10,
-  },
-  opcionesFila: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  opcion: {
-    flexGrow: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 2,
-    borderWidth: 1,
-    borderColor: colores.hairlineFuerte,
-    backgroundColor: 'transparent',
-    minWidth: 110,
-  },
-  opcionPresionado: {
-    backgroundColor: colores.oroActivo,
-    borderColor: colores.oro,
-  },
-  opcionTexto: {
-    color: colores.oro,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  historial: {
-    borderTopWidth: 1,
-    borderTopColor: colores.hairline,
-    marginTop: 14,
-    paddingTop: 12,
-  },
-  historialTitulo: {
-    color: colores.champán,
-    fontSize: 13,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  historialItem: {
-    borderLeftWidth: 1,
-    borderLeftColor: colores.patina,
-    paddingLeft: 10,
-    marginBottom: 9,
-  },
-  historialItemError: { borderLeftColor: colores.error },
-  historialPregunta: {
-    color: colores.texto,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  historialTexto: {
-    color: colores.textoTenue,
-    fontSize: 12,
-    lineHeight: 16,
-    marginTop: 3,
-  },
-  historialTextoError: { color: colores.errorTexto },
-  notaPie: {
-    color: colores.textoTenue,
-    fontSize: 12,
-    lineHeight: 16,
-    textAlign: 'center',
-    marginTop: 16,
-    alignSelf: 'center',
-    maxWidth: 620,
-  },
-});
+function crearEstilosAsistente(colores) {
+  return StyleSheet.create({
+    flex: { flex: 1 },
+    raiz: { flex: 1, backgroundColor: colores.laca },
+    cabecera: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingHorizontal: 16,
+      paddingTop: Platform.select({ android: 36, ios: 18, default: 14 }),
+      paddingBottom: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colores.hairline,
+      backgroundColor: colores.panel,
+    },
+    cabeceraTitulo: {
+      color: colores.champán,
+      fontSize: 18,
+      fontWeight: '700',
+      letterSpacing: -0.2,
+    },
+    cabeceraSub: {
+      color: colores.textoSuave,
+      fontSize: 11,
+      fontWeight: '600',
+      marginTop: 2,
+    },
+    cerrar: {
+      backgroundColor: colores.grafito,
+      borderWidth: 1,
+      borderColor: colores.hairline,
+      borderRadius: 4,
+      minHeight: 44,
+      minWidth: 44,
+      paddingHorizontal: 14,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    cerrarTexto: {
+      color: colores.oro,
+      fontSize: 12,
+      fontWeight: '700',
+    },
+    contenido: {
+      width: '100%',
+      maxWidth: 1120,
+      alignSelf: 'center',
+      paddingHorizontal: 16,
+      paddingTop: 14,
+      paddingBottom: 28,
+    },
+    descripcion: {
+      color: colores.textoSuave,
+      fontSize: 13,
+      lineHeight: 19,
+      marginBottom: 12,
+    },
+    indicadores: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginBottom: 12,
+    },
+    indicador: {
+      flexGrow: 1,
+      minWidth: 130,
+      backgroundColor: colores.panel,
+      borderWidth: 1,
+      borderColor: colores.hairline,
+      borderRadius: 4,
+      paddingVertical: 9,
+      paddingHorizontal: 12,
+    },
+    indicadorClave: {
+      color: colores.textoTenue,
+      fontSize: 11,
+      fontWeight: '700',
+      letterSpacing: 1,
+    },
+    indicadorValor: {
+      color: colores.champán,
+      fontSize: 13,
+      fontWeight: '700',
+      marginTop: 3,
+    },
+    alerta: {
+      borderWidth: 1,
+      borderRadius: 4,
+      padding: 14,
+      marginBottom: 12,
+    },
+    alertaError: {
+      backgroundColor: colores.errorTinte,
+      borderColor: colores.errorBorde,
+    },
+    alertaTitulo: {
+      color: colores.errorTexto,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    alertaTexto: {
+      color: colores.errorTexto,
+      fontSize: 12,
+      lineHeight: 18,
+      marginTop: 4,
+    },
+    paneles: { gap: 16 },
+    panelesAmplios: { flexDirection: 'row', alignItems: 'flex-start' },
+    panelMitad: { flex: 1, minWidth: 0 },
+    panelCompleto: { width: '100%' },
+    panel: {
+      backgroundColor: colores.panel,
+      borderWidth: 1,
+      borderColor: colores.hairline,
+      borderRadius: 4,
+      padding: 16,
+    },
+    panelCabecera: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginBottom: 10,
+    },
+    panelEtiqueta: {
+      color: colores.oro,
+      fontSize: 11,
+      fontWeight: '700',
+      letterSpacing: 1.3,
+    },
+    contador: {
+      backgroundColor: colores.patinaTinte,
+      borderWidth: 1,
+      borderColor: colores.patinaBorde,
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+    },
+    contadorTexto: {
+      color: colores.patinaTexto,
+      fontSize: 11,
+      fontWeight: '700',
+    },
+    modeloBadge: {
+      color: colores.patinaTexto,
+      fontSize: 11,
+      fontWeight: '700',
+      letterSpacing: 1,
+      backgroundColor: colores.patinaTinte,
+      borderWidth: 1,
+      borderColor: colores.patinaBorde,
+      borderRadius: 999,
+      paddingHorizontal: 9,
+      paddingVertical: 4,
+      overflow: 'hidden',
+    },
+    productoImagen: {
+      width: '100%',
+      height: 175,
+      borderRadius: 4,
+      backgroundColor: colores.grafito,
+      marginBottom: 12,
+    },
+    productoImagenAmplia: { height: 215 },
+    imagenVacia: {
+      width: '100%',
+      height: 140,
+      borderRadius: 4,
+      backgroundColor: colores.grafito,
+      borderWidth: 1,
+      borderColor: colores.hairline,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 12,
+    },
+    imagenVaciaIcono: { fontSize: 34 },
+    imagenVaciaTexto: { color: colores.textoTenue, fontSize: 12, marginTop: 6 },
+    productoNombre: {
+      color: colores.champán,
+      fontSize: 20,
+      fontWeight: '700',
+      letterSpacing: -0.2,
+    },
+    productoCategoria: {
+      color: colores.oro,
+      fontSize: 11,
+      fontWeight: '700',
+      letterSpacing: 1.1,
+      marginTop: 5,
+    },
+    productoPrecio: {
+      color: colores.oro,
+      fontSize: 22,
+      fontWeight: '700',
+      marginTop: 8,
+      letterSpacing: -0.3,
+    },
+    productoDescripcion: {
+      color: colores.textoSuave,
+      fontSize: 13,
+      lineHeight: 20,
+      marginTop: 8,
+      marginBottom: 14,
+    },
+    ayuda: {
+      color: colores.textoSuave,
+      fontSize: 12,
+      lineHeight: 18,
+      marginBottom: 10,
+    },
+    entrada: {
+      width: '100%',
+      backgroundColor: colores.grafito,
+      borderWidth: 1,
+      borderColor: colores.hairline,
+      borderRadius: 4,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      minHeight: 48,
+      color: colores.champán,
+      fontSize: 14,
+    },
+    entradaFoco: { borderColor: colores.hairlineFuerte },
+    entradaDeshabilitada: { opacity: 0.55 },
+    sugerencias: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginTop: 8,
+    },
+    sugerencia: {
+      backgroundColor: colores.grafito,
+      borderWidth: 1,
+      borderColor: colores.hairline,
+      borderRadius: 999,
+      minHeight: 44,
+      justifyContent: 'center',
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      maxWidth: '100%',
+    },
+    sugerenciaPresionado: {
+      backgroundColor: colores.grafito2,
+      borderColor: colores.hairlineFuerte,
+    },
+    sugerenciaTexto: {
+      color: colores.texto,
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    botones: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginTop: 12,
+      marginBottom: 12,
+    },
+    botonPrimario: {
+      flex: 1,
+      minWidth: 140,
+      minHeight: 46,
+      borderRadius: 2,
+      backgroundColor: colores.oro,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 14,
+    },
+    botonPrimarioPresionado: { backgroundColor: colores.oroSuave },
+    botonPrimarioTexto: {
+      color: colores.darkInk,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    botonSecundario: {
+      flex: 1,
+      minWidth: 150,
+      minHeight: 46,
+      borderRadius: 2,
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: colores.hairlineFuerte,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 14,
+    },
+    botonSecundarioPresionado: {
+      backgroundColor: colores.oroActivo,
+      borderColor: colores.oro,
+    },
+    botonSecundarioTexto: {
+      color: colores.oro,
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    botonDeshabilitado: { opacity: 0.45 },
+    respuesta: {
+      minHeight: 112,
+      borderRadius: 4,
+      borderWidth: 1,
+      padding: 16,
+      justifyContent: 'center',
+    },
+    respuestaNeutra: {
+      backgroundColor: colores.grafito,
+      borderColor: colores.hairline,
+    },
+    respuestaExito: {
+      backgroundColor: colores.exitoTinte,
+      borderColor: colores.patinaBorde,
+    },
+    respuestaError: {
+      backgroundColor: colores.errorTinte,
+      borderColor: colores.errorBorde,
+    },
+    respuestaEtiqueta: {
+      color: colores.patinaTexto,
+      fontSize: 11,
+      fontWeight: '700',
+      letterSpacing: 1.1,
+      marginBottom: 6,
+    },
+    respuestaEtiquetaError: { color: colores.errorTexto },
+    respuestaTexto: {
+      color: colores.champán,
+      fontSize: 13,
+      lineHeight: 20,
+    },
+    respuestaTextoError: { color: colores.errorTexto },
+    confianza: {
+      color: colores.textoTenue,
+      fontSize: 12,
+      fontWeight: '600',
+      marginTop: 8,
+    },
+    evidencia: {
+      fontFamily: 'monospace',
+      color: colores.patinaTexto,
+      fontSize: 12,
+      fontWeight: '600',
+      marginTop: 8,
+      lineHeight: 16,
+    },
+    opciones: {
+      borderTopWidth: 1,
+      borderTopColor: colores.hairline,
+      marginTop: 12,
+      paddingTop: 12,
+    },
+    opcionesTitulo: {
+      color: colores.champán,
+      fontSize: 13,
+      fontWeight: '700',
+      marginBottom: 10,
+    },
+    opcionesFila: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+    },
+    opcion: {
+      flexGrow: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 44,
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+      borderRadius: 2,
+      borderWidth: 1,
+      borderColor: colores.hairlineFuerte,
+      backgroundColor: 'transparent',
+      minWidth: 110,
+    },
+    opcionPresionado: {
+      backgroundColor: colores.oroActivo,
+      borderColor: colores.oro,
+    },
+    opcionTexto: {
+      color: colores.oro,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    historial: {
+      borderTopWidth: 1,
+      borderTopColor: colores.hairline,
+      marginTop: 14,
+      paddingTop: 12,
+    },
+    historialTitulo: {
+      color: colores.champán,
+      fontSize: 13,
+      fontWeight: '700',
+      marginBottom: 8,
+    },
+    historialItem: {
+      borderLeftWidth: 1,
+      borderLeftColor: colores.patina,
+      paddingLeft: 10,
+      marginBottom: 9,
+    },
+    historialItemError: { borderLeftColor: colores.error },
+    historialPregunta: {
+      color: colores.texto,
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    historialTexto: {
+      color: colores.textoTenue,
+      fontSize: 12,
+      lineHeight: 16,
+      marginTop: 3,
+    },
+    historialTextoError: { color: colores.errorTexto },
+    notaPie: {
+      color: colores.textoTenue,
+      fontSize: 12,
+      lineHeight: 16,
+      textAlign: 'center',
+      marginTop: 16,
+      alignSelf: 'center',
+      maxWidth: 620,
+    },
+  });
+}

@@ -1,11 +1,17 @@
 {
   "expo": {
-    "name": "Pastelería La T",
+    "name": "La Pastelería La T",
     "slug": "sensores",
     "version": "1.0.0",
     "orientation": "default",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/logo-la-t.png",
+    "backgroundColor": "#FDF4D8",
     "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/logo-la-t.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FDF4D8"
+    },
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
@@ -14,14 +20,14 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#FFF8F3",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#FDF4D8",
+        "foregroundImage": "./assets/logo-la-t.png",
+        "resizeMode": "contain"
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/logo-la-t.png",
+      "lang": "es"
     },
     "plugins": [
       [

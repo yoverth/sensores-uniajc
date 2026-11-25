@@ -1,9 +1,9 @@
 /* =========================================================
    CATÁLOGO COMERCIAL · PASTELERÍA LA T
 
-   Este archivo es SOLO para la tienda. Los 120 productos de
-   demostración del laboratorio viven en `productos.js` y no se
-   mezclan con el catálogo real.
+   Este archivo es la única fuente del catálogo comercial. La
+   tienda, «Agita y gana» y el Asistente IA trabajan con esta
+   misma lista real.
 ========================================================= */
 
 const imagenes = {
@@ -183,24 +183,91 @@ export const PRODUCTOS = [
   },
 ];
 
+export const RANGOS_PRECIO = [
+  { id: 'todos', etiqueta: 'Cualquier precio', probar: () => true },
+  {
+    id: 'hasta_10000',
+    etiqueta: 'Hasta $10.000',
+    probar: (precio) => precio <= 10000,
+  },
+  {
+    id: 'entre_10000_55000',
+    etiqueta: '$10.000 – $55.000',
+    probar: (precio) => precio > 10000 && precio <= 55000,
+  },
+  {
+    id: 'mas_55000',
+    etiqueta: 'Más de $55.000',
+    probar: (precio) => precio > 55000,
+  },
+];
+
+export const ORDENES_BUSQUEDA = [
+  { id: 'relevancia', etiqueta: 'Destacados' },
+  { id: 'precio_asc', etiqueta: 'Menor precio' },
+  { id: 'precio_desc', etiqueta: 'Mayor precio' },
+  { id: 'nombre_asc', etiqueta: 'Nombre A–Z' },
+];
+
 export function nombreCategoria(id) {
   const encontrada = CATEGORIAS.find((c) => c.id === id);
   return encontrada ? encontrada.nombre : id;
 }
 
-/* Búsqueda + filtro usados por la tienda (función pura). */
-export function filtrarProductos(lista, { texto = '', categoria = 'todas' } = {}) {
-  const consulta = texto.trim().toLowerCase();
+export function normalizarTexto(valor = '') {
+  return String(valor)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
 
-  return lista.filter((producto) => {
+/* Búsqueda + filtros combinados usados por la tienda (función pura). */
+export function filtrarProductos(
+  lista,
+  {
+    texto = '',
+    categoria = 'todas',
+    rangoPrecio = 'todos',
+    soloDisponibles = false,
+    soloEtiqueta = false,
+    orden = 'relevancia',
+  } = {}
+) {
+  const terminos = normalizarTexto(texto).split(/\s+/).filter(Boolean);
+  const reglaPrecio =
+    RANGOS_PRECIO.find((r) => r.id === rangoPrecio) || RANGOS_PRECIO[0];
+
+  const filtrados = lista.filter((producto) => {
     if (categoria !== 'todas' && producto.categoria !== categoria) return false;
-    if (!consulta) return true;
+    if (!reglaPrecio.probar(producto.precio)) return false;
+    if (soloDisponibles && (!producto.disponible || producto.stock <= 0)) {
+      return false;
+    }
+    if (soloEtiqueta && !producto.etiqueta) return false;
 
-    const contenido =
+    if (terminos.length === 0) return true;
+
+    const contenido = normalizarTexto(
       `${producto.nombre} ${producto.descripcion} ${nombreCategoria(
         producto.categoria
-      )}`.toLowerCase();
+      )} ${producto.etiqueta || ''}`
+    );
 
-    return contenido.includes(consulta);
+    return terminos.every((t) => contenido.includes(t));
   });
+
+  if (orden === 'precio_asc') {
+    return [...filtrados].sort((a, b) => a.precio - b.precio);
+  }
+  if (orden === 'precio_desc') {
+    return [...filtrados].sort((a, b) => b.precio - a.precio);
+  }
+  if (orden === 'nombre_asc') {
+    return [...filtrados].sort((a, b) =>
+      a.nombre.localeCompare(b.nombre, 'es')
+    );
+  }
+
+  return filtrados;
 }
